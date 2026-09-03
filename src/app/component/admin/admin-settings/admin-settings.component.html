@@ -12,49 +12,81 @@
     
     <!-- Branding -->
     <div>
-      <h3 class="font-bold text-sm text-surface-900 mb-3 border-b border-surface-100 pb-2">Branding & Store Profile</h3>
+      <h3 class="font-bold text-sm text-surface-900 mb-3 border-b border-surface-100 pb-2 flex items-center gap-2">
+        <i class="pi pi-palette text-primary-600"></i> Branding & Store Profile
+      </h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
         <div class="flex flex-col gap-1">
           <label class="font-bold text-surface-700">Store Name</label>
-          <input type="text" pInputText formControlName="StoreName" class="p-3 text-xs rounded-xl" />
+          <input type="text" pInputText formControlName="StoreName" placeholder="e.g. e-rezvon / REZVON" class="p-3 text-xs rounded-xl" />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="font-bold text-surface-700">Tagline</label>
-          <input type="text" pInputText formControlName="Tagline" class="p-3 text-xs rounded-xl" />
+          <label class="font-bold text-surface-700">Tagline / Slogan</label>
+          <input type="text" pInputText formControlName="Tagline" placeholder="e.g. Premium Fashion & Lifestyle" class="p-3 text-xs rounded-xl" />
         </div>
       </div>
 
-      <!-- Hero Banner Image Upload -->
-      <div class="flex flex-col gap-2 mt-4 pt-3 border-t border-surface-100">
-        <label class="font-bold text-surface-700 text-xs">Homepage Hero Banner Image (Uploaded to Database)</label>
+      <!-- Media Assets: Store Logo Only -->
+      <div class="mt-6 pt-4 border-t border-surface-100">
         
-        @if (bannerImagePreview()) {
-          <div class="relative w-full max-w-lg aspect-[16/7] rounded-2xl overflow-hidden border border-surface-200 shadow-xs group bg-surface-900">
-            <img [src]="bannerImagePreview()" alt="Hero Banner Preview" class="w-full h-full object-cover" />
-            <button 
-              type="button" 
-              (click)="removeBanner()" 
-              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md hover:bg-rose-700 transition-colors"
-            >
-              <i class="pi pi-trash text-xs"></i>
-            </button>
+        <!-- Store Logo Upload Card -->
+        <div class="flex flex-col gap-3 p-5 rounded-2xl bg-surface-50 border border-surface-200 max-w-xl">
+          <div class="flex items-center justify-between">
+            <label class="font-bold text-surface-800 text-xs flex items-center gap-1.5">
+              <i class="pi pi-image text-primary-600"></i> Store Official Logo
+            </label>
+            @if (logoImagePreview()) {
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1">
+                <i class="pi pi-check text-[9px]"></i> Active Logo
+              </span>
+            }
           </div>
-        } @else {
-          <p-fileupload 
-            #bannerUploader
-            mode="basic" 
-            name="banner" 
-            accept="image/*" 
-            maxFileSize="10000000" 
-            chooseLabel="Upload Homepage Hero Banner" 
-            chooseIcon="pi pi-image" 
-            (onSelect)="onBannerSelect($event)" 
-            [auto]="true" 
-            [disabled]="isBannerUploading()"
-            styleClass="p-button-outlined p-button-sm text-xs rounded-xl"
-          />
-        }
-        <span class="text-[11px] text-surface-400">Recommended dimensions: 1920x1080px (Landscape). Uploaded banner will be displayed dynamically on the homepage hero.</span>
+
+          @if (logoImagePreview()) {
+            <div class="relative w-full h-40 rounded-2xl bg-surface-900 flex items-center justify-center p-4 border border-surface-200 overflow-hidden group shadow-inner">
+              <!-- Dark background preview to clearly show white/transparent logos -->
+              <img [src]="logoImagePreview()" alt="Store Logo Preview" class="max-h-28 max-w-full object-contain drop-shadow" />
+              <button 
+                type="button" 
+                (click)="removeLogo()" 
+                class="absolute top-3 right-3 w-8 h-8 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-md transition-all active:scale-95"
+                title="Remove Logo"
+              >
+                <i class="pi pi-trash text-xs"></i>
+              </button>
+            </div>
+          } @else {
+            <div class="flex flex-col items-center justify-center p-6 sm:p-8 border-2 border-dashed border-surface-300 rounded-2xl bg-white hover:border-primary-400 transition-colors">
+              <div class="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center mb-2">
+                <i class="pi pi-cloud-upload text-xl"></i>
+              </div>
+              <p class="text-xs font-bold text-surface-800 mb-1">Upload Store Logo</p>
+              <p class="text-[11px] text-surface-400 text-center mb-3">PNG, SVG, JPG or WEBP (Direct upload to Cloudinary)</p>
+              <p-fileupload 
+                #logoUploader
+                mode="basic" 
+                name="logo" 
+                accept="image/*" 
+                maxFileSize="5000000" 
+                chooseLabel="Select Logo Image" 
+                chooseIcon="pi pi-upload" 
+                (onSelect)="onLogoSelect($event)" 
+                [auto]="true" 
+                [disabled]="isLogoUploading()"
+                styleClass="p-button-sm text-xs rounded-xl"
+              />
+              @if (isLogoUploading()) {
+                <span class="text-xs text-primary-600 flex items-center gap-1.5 mt-2 font-semibold">
+                  <i class="pi pi-spin pi-spinner"></i> Uploading logo to Cloudinary...
+                </span>
+              }
+            </div>
+          }
+          <span class="text-[11px] text-surface-500 leading-normal">
+            Directly uploaded to Cloudinary and saved to the <code class="font-mono text-primary-600 bg-primary-50 px-1 py-0.5 rounded">LogoUrl</code> database column. Displays across Admin Sidebar, Admin Top Bar, Storefront Navbar Header, and Footer.
+          </span>
+        </div>
+
       </div>
     </div>
 

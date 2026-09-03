@@ -18,19 +18,19 @@ export class AdminSettingsComponent implements OnInit {
   private productService = inject(ProductService);
   private messageService = inject(MessageService);
 
-  @ViewChild('bannerUploader') bannerUploader?: any;
+  @ViewChild('logoUploader') logoUploader?: any;
 
   settingsForm!: FormGroup;
   saving = signal<boolean>(false);
-  bannerImagePreview = signal<string>('');
-  isBannerUploading = signal<boolean>(false);
+  logoImagePreview = signal<string>('');
+  isLogoUploading = signal<boolean>(false);
 
   ngOnInit(): void {
     const s = this.settingsService.settingsSignal();
     this.settingsForm = this.fb.group({
       StoreName: [s.StoreName, Validators.required],
       Tagline: [s.Tagline],
-      BannerUrl: [s.BannerUrl || ''],
+      LogoUrl: [s.LogoUrl || ''],
       Phone: [s.Phone],
       WhatsApp: [s.WhatsApp],
       Email: [s.Email, [Validators.email]],
@@ -47,48 +47,67 @@ export class AdminSettingsComponent implements OnInit {
       next: (data) => {
         if (data) {
           this.settingsForm.patchValue(data);
-          if (data.BannerUrl) {
-            this.bannerImagePreview.set(this.settingsService.formatImageUrl(data.BannerUrl));
+          if (data.LogoUrl) {
+            this.logoImagePreview.set(this.settingsService.formatImageUrl(data.LogoUrl));
           }
         }
       },
     });
   }
 
-  onBannerSelect(event: any): void {
-    const file = event.files?.[0] || (event.target?.files?.[0]);
+  onLogoSelect(event: any): void {
+    const file = event.files?.[0] || event.target?.files?.[0];
     if (!file) return;
 
-    this.isBannerUploading.set(true);
+    this.isLogoUploading.set(true);
     this.productService.uploadImage(file).subscribe({
       next: (res) => {
-        this.isBannerUploading.set(false);
+        this.isLogoUploading.set(false);
         const uploadedUrl = res.url || res.filename || '';
-        this.settingsForm.patchValue({ BannerUrl: uploadedUrl });
-        this.bannerImagePreview.set(this.settingsService.formatImageUrl(uploadedUrl));
+        this.settingsForm.patchValue({ LogoUrl: uploadedUrl });
+        this.logoImagePreview.set(this.settingsService.formatImageUrl(uploadedUrl));
+
+        // Immediately update global signal and persist in Supabase
+        this.settingsService.updateSettings({
+          ...this.settingsForm.value,
+          LogoUrl: uploadedUrl,
+        }).subscribe();
+
         this.messageService.add({
-          severity: 'info',
-          summary: 'Uploaded',
-          detail: 'Banner image uploaded successfully.',
+          severity: 'success',
+          summary: 'Logo Updated',
+          detail: 'Store logo uploaded & updated successfully.',
         });
       },
-      error: () => {
-        this.isBannerUploading.set(false);
+      error: (err) => {
+        console.error('Cloudinary upload error:', err);
+        this.isLogoUploading.set(false);
         this.messageService.add({
           severity: 'error',
           summary: 'Upload Error',
-          detail: 'Could not upload banner image.',
+          detail: 'Could not upload store logo to Cloudinary.',
         });
       },
     });
   }
 
-  removeBanner(): void {
-    this.settingsForm.patchValue({ BannerUrl: '' });
-    this.bannerImagePreview.set('');
-    if (this.bannerUploader) {
-      this.bannerUploader.clear();
+  removeLogo(): void {
+    this.settingsForm.patchValue({ LogoUrl: '' });
+    this.logoImagePreview.set('');
+    if (this.logoUploader) {
+      this.logoUploader.clear();
     }
+    // Immediately remove from global signal and persist
+    this.settingsService.updateSettings({
+      ...this.settingsForm.value,
+      LogoUrl: '',
+    }).subscribe();
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Logo Removed',
+      detail: 'Store logo has been removed.',
+    });
   }
 
   saveSettings(): void {

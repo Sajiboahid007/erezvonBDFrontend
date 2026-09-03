@@ -11,17 +11,40 @@
       <!-- Brand & Toggle Header -->
       <div class="h-16 flex items-center justify-between px-4 border-b border-surface-800">
         @if (sidebarOpen()) {
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
-              <i class="pi pi-shield text-base"></i>
+          <div class="flex items-center gap-2.5 min-w-0 overflow-hidden">
+            @if (settingsService.settingsSignal().LogoUrl) {
+              <img 
+                [src]="settingsService.settingsSignal().LogoUrl" 
+                alt="Store Logo" 
+                class="w-8 h-8 rounded-lg object-contain bg-white/10 p-0.5 shrink-0 border border-white/10" 
+              />
+            } @else {
+              <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white shrink-0">
+                <i class="pi pi-shield text-base"></i>
+              </div>
+            }
+            <div class="flex items-center gap-1.5 min-w-0 truncate">
+              <span class="font-extrabold text-sm tracking-tight font-display truncate text-white">
+                {{ settingsService.settingsSignal().StoreName || 'e-rezvon' }}
+              </span>
+              <span class="text-[9px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-400 border border-primary-500/30 shrink-0">
+                Admin
+              </span>
             </div>
-            <span class="font-extrabold text-base tracking-tight font-display">
-              e-rezvon<span class="text-primary-400">Admin</span>
-            </span>
           </div>
         } @else {
-          <div class="w-8 h-8 mx-auto rounded-lg gradient-primary flex items-center justify-center text-white">
-            <i class="pi pi-shield text-base"></i>
+          <div class="mx-auto">
+            @if (settingsService.settingsSignal().LogoUrl) {
+              <img 
+                [src]="settingsService.settingsSignal().LogoUrl" 
+                alt="Store Logo" 
+                class="w-8 h-8 rounded-lg object-contain bg-white/10 p-0.5 border border-white/10" 
+              />
+            } @else {
+              <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
+                <i class="pi pi-shield text-base"></i>
+              </div>
+            }
           </div>
         }
 
@@ -127,13 +150,26 @@
           <i class="pi pi-bars text-lg"></i>
         </button>
 
-        <div class="flex items-center gap-1.5">
-          <div class="md:hidden w-6 h-6 rounded-lg gradient-primary flex items-center justify-center text-white text-xs">
-            <i class="pi pi-shield"></i>
+        <div class="flex items-center gap-2">
+          @if (settingsService.settingsSignal().LogoUrl) {
+            <img 
+              [src]="settingsService.settingsSignal().LogoUrl" 
+              alt="Store Logo" 
+              class="w-7 h-7 rounded-lg object-contain bg-surface-100 p-0.5 border border-surface-200" 
+            />
+          } @else {
+            <div class="w-6 h-6 rounded-lg gradient-primary flex items-center justify-center text-white text-xs">
+              <i class="pi pi-shield"></i>
+            </div>
+          }
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs sm:text-sm font-extrabold tracking-tight text-surface-800">
+              {{ settingsService.settingsSignal().StoreName || 'e-rezvon' }}
+            </span>
+            <span class="hidden sm:inline text-xs font-bold text-surface-400 uppercase tracking-wider">
+              Control Panel
+            </span>
           </div>
-          <span class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-surface-800">
-            Admin <span class="hidden sm:inline text-surface-400 font-bold">Control Panel</span>
-          </span>
         </div>
       </div>
 
@@ -168,13 +204,26 @@
 <!-- Mobile Admin Navigation Drawer -->
 <p-drawer [visible]="mobileSidebarOpen()" (visibleChange)="mobileSidebarOpen.set($event)" position="left" styleClass="admin-mobile-drawer w-72 sm:w-80">
   <ng-template #header>
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
-        <i class="pi pi-shield text-base"></i>
+    <div class="flex items-center gap-2.5">
+      @if (settingsService.settingsSignal().LogoUrl) {
+        <img 
+          [src]="settingsService.settingsSignal().LogoUrl" 
+          alt="Store Logo" 
+          class="w-8 h-8 rounded-lg object-contain bg-white/10 p-0.5 shrink-0 border border-white/10" 
+        />
+      } @else {
+        <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white shrink-0">
+          <i class="pi pi-shield text-base"></i>
+        </div>
+      }
+      <div class="flex items-center gap-1.5 min-w-0 truncate">
+        <span class="font-extrabold text-base tracking-tight font-display text-white truncate">
+          {{ settingsService.settingsSignal().StoreName || 'e-rezvon' }}
+        </span>
+        <span class="text-[9px] uppercase font-extrabold px-1.5 py-0.5 rounded bg-primary-500/20 text-primary-400 border border-primary-500/30 shrink-0">
+          Admin
+        </span>
       </div>
-      <span class="font-extrabold text-base tracking-tight font-display text-white">
-        e-rezvon<span class="text-primary-400">Admin</span>
-      </span>
     </div>
   </ng-template>
 

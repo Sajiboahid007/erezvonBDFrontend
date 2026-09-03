@@ -4,11 +4,21 @@
     <!-- Brand Info -->
     <div class="flex flex-col gap-4">
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-white shadow-md">
-          <i class="pi pi-shopping-bag text-lg"></i>
-        </div>
+        @if (settingsService.settingsSignal().LogoUrl) {
+          <div class="w-10 h-10 rounded-xl bg-white border border-white/20 p-1 flex items-center justify-center shadow-md shrink-0 overflow-hidden">
+            <img 
+              [src]="settingsService.settingsSignal().LogoUrl" 
+              [alt]="settingsService.settingsSignal().StoreName || 'e-rezvonBD'" 
+              class="w-full h-full object-contain" 
+            />
+          </div>
+        } @else {
+          <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white shadow-md shrink-0">
+            <i class="pi pi-shopping-bag text-lg"></i>
+          </div>
+        }
         <span class="text-xl font-extrabold text-white font-display">
-          e-rezvon<span class="text-primary-400">BD</span>
+          {{ settingsService.settingsSignal().StoreName || 'e-rezvonBD' }}
         </span>
       </div>
       <p class="text-sm text-surface-400 leading-relaxed">

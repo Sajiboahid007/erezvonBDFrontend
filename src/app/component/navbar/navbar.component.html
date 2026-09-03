@@ -34,16 +34,26 @@
         <i class="pi pi-bars text-xl"></i>
       </button>
 
-      <a routerLink="/" class="flex items-center gap-2">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center shadow-xs text-white shrink-0">
-          <i class="pi pi-shopping-bag text-base sm:text-xl"></i>
-        </div>
+      <a routerLink="/" class="flex items-center gap-2.5">
+        @if (settingsService.settingsSignal().LogoUrl) {
+          <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white border border-surface-200 p-1 flex items-center justify-center shadow-xs shrink-0 overflow-hidden">
+            <img 
+              [src]="settingsService.settingsSignal().LogoUrl" 
+              [alt]="settingsService.settingsSignal().StoreName || 'REZVON'" 
+              class="w-full h-full object-contain"
+            />
+          </div>
+        } @else {
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center shadow-xs text-white shrink-0">
+            <i class="pi pi-shopping-bag text-base sm:text-xl"></i>
+          </div>
+        }
         <div class="flex flex-col">
           <span class="text-base sm:text-xl font-extrabold tracking-tight font-display text-surface-900 leading-tight">
-            REZVON<span class="text-primary-600">.</span>
+            {{ settingsService.settingsSignal().StoreName || 'REZVON' }}<span class="text-primary-600">.</span>
           </span>
           <p class="hidden sm:block text-[10px] uppercase font-bold text-surface-400 tracking-wider -mt-0.5">
-            Men's Fashion & Lifestyle
+            {{ settingsService.settingsSignal().Tagline || "Men's Fashion & Lifestyle" }}
           </p>
         </div>
       </a>
@@ -282,11 +292,23 @@
 <!-- Mobile Navigation Drawer -->
 <p-drawer [visible]="mobileMenuOpen()" (visibleChange)="mobileMenuOpen.set($event)" position="left" styleClass="w-80 sm:w-96">
   <ng-template #header>
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
-        <i class="pi pi-shopping-bag text-base"></i>
-      </div>
-      <span class="font-bold text-lg font-display text-surface-900">REZVON<span class="text-primary-600">.</span></span>
+    <div class="flex items-center gap-2.5">
+      @if (settingsService.settingsSignal().LogoUrl) {
+        <div class="w-9 h-9 rounded-xl bg-white border border-surface-200 p-1 flex items-center justify-center shadow-xs shrink-0 overflow-hidden">
+          <img 
+            [src]="settingsService.settingsSignal().LogoUrl" 
+            [alt]="settingsService.settingsSignal().StoreName || 'REZVON'" 
+            class="w-full h-full object-contain"
+          />
+        </div>
+      } @else {
+        <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white shrink-0">
+          <i class="pi pi-shopping-bag text-base"></i>
+        </div>
+      }
+      <span class="font-bold text-lg font-display text-surface-900">
+        {{ settingsService.settingsSignal().StoreName || 'REZVON' }}<span class="text-primary-600">.</span>
+      </span>
     </div>
   </ng-template>
   
