@@ -1,0 +1,374 @@
+<div class="flex flex-col gap-6">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-surface-200 shadow-xs">
+    <div>
+      <h1 class="text-2xl font-extrabold text-surface-900 font-display">Customer Orders Management</h1>
+      <p class="text-xs text-surface-500">Monitor order lifecycle, update status milestones, and assign courier tracking numbers.</p>
+    </div>
+
+    <button (click)="loadOrders()" class="px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-200 text-surface-800 font-bold text-xs flex items-center gap-2">
+      <i class="pi pi-refresh text-xs"></i> Refresh
+    </button>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+    <p-table 
+      #dt
+      [value]="orders()" 
+      [loading]="loading()" 
+      [paginator]="true" 
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 20, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} orders"
+      [globalFilterFields]="['OrderNumber', 'ShippingAddress.Name', 'ShippingAddress.Phone', 'OrderStatus.Name']"
+      [rowHover]="true"
+      responsiveLayout="scroll"
+      styleClass="p-datatable-sm p-datatable-hoverable"
+    >
+      <ng-template #caption>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-extrabold text-surface-800 font-display">Orders Registry</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-xs font-bold font-mono">
+              {{ orders().length }} orders
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <p-iconfield iconPosition="left" class="w-full sm:w-64">
+              <p-inputicon styleClass="pi pi-search text-xs" />
+              <input 
+                pInputText 
+                type="text" 
+                (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                placeholder="Search order #, customer, phone..." 
+                class="w-full text-xs p-2 rounded-xl"
+              />
+            </p-iconfield>
+
+            <p-button 
+              icon="pi pi-refresh" 
+              [rounded]="true" 
+              [text]="true" 
+              severity="secondary" 
+              size="small" 
+              (onClick)="loadOrders()" 
+              pTooltip="Refresh Orders" 
+              tooltipPosition="top"
+            />
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template #header>
+        <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+          <th pSortableColumn="OrderNumber" class="py-3.5 px-4 w-32">
+            <div class="flex items-center gap-1.5">
+              Order # <p-sortIcon field="OrderNumber" />
+            </div>
+          </th>
+          <th pSortableColumn="ShippingAddress.Name" class="py-3.5 px-4 w-44">
+            <div class="flex items-center gap-1.5">
+              Customer <p-sortIcon field="ShippingAddress.Name" />
+            </div>
+          </th>
+          <th class="py-3.5 px-4">Purchased Items & Variants</th>
+          <th pSortableColumn="GrandTotal" class="py-3.5 px-4 w-28">
+            <div class="flex items-center gap-1.5">
+              Total <p-sortIcon field="GrandTotal" />
+            </div>
+          </th>
+          <th class="py-3.5 px-4 text-center w-24">Items</th>
+          <th class="py-3.5 px-4 w-24">Payment</th>
+          <th class="py-3.5 px-4 w-28">Status</th>
+          <th class="py-3.5 px-4 text-center w-24">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-order>
+        <tr class="text-xs text-surface-800 border-b border-surface-100 hover:bg-surface-50/80 transition-colors">
+          <td class="py-3.5 px-4 font-mono font-bold text-primary-600">
+            #{{ order.OrderNumber || order.Id }}
+          </td>
+
+          <td class="py-3.5 px-4">
+            <div class="font-bold text-surface-900">{{ order.ShippingAddress?.Name || order.User?.Name || 'Guest Customer' }}</div>
+            <div class="text-[10px] text-surface-400 font-mono">{{ order.ShippingAddress?.Phone || order.User?.Phone || '-' }}</div>
+          </td>
+
+          <!-- Order Items with Photos, Size & Color Badges -->
+          <td class="py-3.5 px-4">
+            <div class="flex flex-col gap-1.5 max-w-sm">
+              @for (item of (order.OrderItems || []); track item.Id; let idx = $index) {
+                @if (idx < 2) {
+                  <div class="flex items-center gap-2.5">
+                    @if (getItemImage(item)) {
+                      <img 
+                        [src]="getItemImage(item)" 
+                        class="w-8 h-9 object-cover rounded-lg border border-surface-200 shrink-0 bg-white shadow-2xs" 
+                        alt="Product photo" 
+                      />
+                    } @else {
+                      <div class="w-8 h-9 bg-surface-100 rounded-lg border border-surface-200 flex items-center justify-center text-surface-400 shrink-0">
+                        <i class="pi pi-image text-[10px]"></i>
+                      </div>
+                    }
+                    <div class="flex flex-col min-w-0">
+                      <span class="font-bold text-surface-900 truncate text-[11px]">{{ item.ProductName || item.ProductVariant?.Product?.Name || 'Product' }}</span>
+                      <div class="flex items-center gap-1.5 flex-wrap text-[10px]">
+                        @if (getItemSize(item)) {
+                          <span class="px-1.5 py-0.2 bg-primary-50 text-primary-700 rounded font-bold">
+                            {{ getItemSize(item) }}
+                          </span>
+                        }
+                        @if (getItemColor(item)) {
+                          <span class="px-1.5 py-0.2 bg-surface-100 text-surface-700 rounded font-medium flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full border border-black/20 shrink-0" [style.background-color]="getItemColorHex(item)"></span>
+                            {{ getItemColor(item) }}
+                          </span>
+                        }
+                        <span class="text-surface-500 font-mono">x{{ item.Quantity || 1 }}</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
+              @if ((order.OrderItems?.length || 0) > 2) {
+                <span class="text-[10px] text-surface-400 font-semibold">+ {{ (order.OrderItems?.length || 0) - 2 }} more items</span>
+              }
+            </div>
+          </td>
+
+          <td class="py-3.5 px-4 font-extrabold text-surface-900 font-mono text-xs">
+            {{ settingsService.settingsSignal().CurrencySymbol }}{{ (order.GrandTotal ?? order.SubTotal ?? 0) | number:'1.0-2' }}
+          </td>
+
+          <td class="py-3.5 px-4 text-center">
+            <span class="px-2.5 py-1 rounded-lg bg-surface-100 font-extrabold text-xs text-surface-800 font-mono">
+              {{ getTotalQuantity(order) }} pcs
+            </span>
+          </td>
+
+          <td class="py-3.5 px-4">
+            <span 
+              class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+              [class.bg-emerald-100]="order.IsPaid"
+              [class.text-emerald-700]="order.IsPaid"
+              [class.bg-amber-100]="!order.IsPaid"
+              [class.text-amber-700]="!order.IsPaid"
+            >
+              {{ order.IsPaid ? 'Paid' : 'COD' }}
+            </span>
+          </td>
+
+          <td class="py-3.5 px-4">
+            <p-tag 
+              [value]="order.OrderStatus?.Name || 'Pending'" 
+              [severity]="getStatusSeverity(order.OrderStatus?.Name)" 
+            />
+          </td>
+
+          <td class="py-3.5 px-4 text-center">
+            <p-button 
+              label="Manage" 
+              icon="pi pi-cog" 
+              severity="success" 
+              size="small" 
+              [outlined]="true" 
+              (onClick)="openOrderDetails(order)" 
+            />
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="text-center py-12 text-surface-400 text-xs">
+            <div class="flex flex-col items-center justify-center gap-2">
+              <i class="pi pi-inbox text-3xl text-surface-300"></i>
+              <span class="font-semibold text-surface-600">No customer orders matching the criteria.</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+</div>
+
+<!-- Manage Order Dialog -->
+<p-dialog 
+  [visible]="detailsDialogVisible()" 
+  (visibleChange)="detailsDialogVisible.set($event)" 
+  [header]="'Manage Order #' + (selectedOrder()?.OrderNumber || selectedOrder()?.Id)" 
+  [modal]="true" 
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '780px', maxWidth: '95vw' }"
+>
+  @if (detailsDialogVisible()) {
+    <div class="flex flex-col gap-4 py-2 text-xs">
+      
+      <!-- Top Action Status & Courier Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        
+        <!-- Order Status Box -->
+        <div class="p-4 bg-surface-50 rounded-2xl border border-surface-200 flex flex-col gap-3">
+          <h4 class="font-bold text-surface-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <i class="pi pi-clock text-primary-600"></i> Order Status Milestone
+          </h4>
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-1">
+              <label class="font-bold text-surface-700">Status</label>
+              <p-select 
+                [options]="statusOptions" 
+                [ngModel]="selectedStatusId()" 
+                (ngModelChange)="selectedStatusId.set($event)" 
+                optionLabel="label" 
+                optionValue="value" 
+                styleClass="w-full text-xs" 
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="font-bold text-surface-700">Lifecycle Remarks</label>
+              <input 
+                type="text" 
+                pInputText 
+                [ngModel]="statusRemarks()" 
+                (ngModelChange)="statusRemarks.set($event)" 
+                placeholder="e.g. Dispatched to hub" 
+                class="p-2.5 text-xs rounded-xl" 
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Courier Assignment Box -->
+        <div class="p-4 bg-surface-50 rounded-2xl border border-surface-200 flex flex-col gap-3">
+          <h4 class="font-bold text-surface-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+            <i class="pi pi-send text-primary-600"></i> Assign Courier & Tracking
+          </h4>
+          <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-1">
+              <label class="font-bold text-surface-700">Courier Name</label>
+              <input type="text" pInputText [ngModel]="courierName()" (ngModelChange)="courierName.set($event)" placeholder="Steadfast / Pathao / RedX" class="p-2.5 text-xs rounded-xl" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="font-bold text-surface-700">Tracking Number</label>
+              <input type="text" pInputText [ngModel]="trackingNumber()" (ngModelChange)="trackingNumber.set($event)" placeholder="e.g. ST-981298" class="p-2.5 text-xs rounded-xl" />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Order Items with Real Images, Sizes, Colors & Quantity -->
+      <div class="p-4 bg-surface-50 rounded-2xl border border-surface-200 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-surface-900 flex items-center gap-1.5 text-xs">
+            <i class="pi pi-box text-primary-600"></i> Purchased Items & Quantity ({{ selectedOrder()?.OrderItems?.length || 0 }} items)
+          </span>
+          <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+            Total Qty: {{ getTotalQuantity(selectedOrder()) }} pcs
+          </span>
+        </div>
+
+        <div class="flex flex-col divide-y divide-surface-200 max-h-60 overflow-y-auto pr-1">
+          @for (item of selectedOrder()?.OrderItems; track (item.Id || $index)) {
+            <div class="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-3.5 min-w-0">
+                @if (getItemImage(item)) {
+                  <img 
+                    [src]="getItemImage(item)" 
+                    class="w-14 h-14 object-cover rounded-xl border border-surface-200 shrink-0 bg-white shadow-2xs" 
+                    alt="Product photo" 
+                  />
+                } @else {
+                  <div class="w-14 h-14 bg-surface-200/80 rounded-xl border border-surface-300 flex flex-col items-center justify-center text-surface-400 shrink-0 gap-1">
+                    <i class="pi pi-image text-lg text-surface-400"></i>
+                    <span class="text-[9px] font-bold">No photo</span>
+                  </div>
+                }
+
+                <div class="flex flex-col gap-1 min-w-0">
+                  <span class="font-extrabold text-sm text-surface-900 truncate">
+                    {{ item.ProductName || item.ProductVariant?.Product?.Name || 'Product' }}
+                  </span>
+                  
+                  <div class="flex items-center gap-2 flex-wrap text-xs">
+                    @if (getItemSize(item)) {
+                      <span class="px-2 py-0.5 bg-primary-100/70 text-primary-800 rounded-md text-[11px] font-extrabold">
+                        Size: {{ getItemSize(item) }}
+                      </span>
+                    }
+                    @if (getItemColor(item)) {
+                      <span class="px-2 py-0.5 bg-surface-200/80 text-surface-800 rounded-md text-[11px] font-bold flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" [style.background-color]="getItemColorHex(item)"></span>
+                        Color: {{ getItemColor(item) }}
+                      </span>
+                    }
+                    <span class="text-surface-500 font-medium text-[11px]">Unit: ৳{{ item.UnitPrice }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Highlighted Quantity & Subtotal -->
+              <div class="flex items-center gap-3 shrink-0">
+                <span class="px-3 py-1 rounded-xl bg-primary-50 text-primary-700 font-extrabold text-xs border border-primary-200 font-mono">
+                  Qty: {{ item.Quantity || 1 }}
+                </span>
+                <span class="font-extrabold text-surface-900 font-mono text-sm w-20 text-right">
+                  ৳{{ item.TotalPrice || (item.UnitPrice * (item.Quantity || 1)) }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Items & Customer Details -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="p-3.5 bg-surface-50 rounded-2xl border border-surface-200 flex flex-col gap-1">
+          <span class="font-bold text-surface-900 flex items-center gap-1.5"><i class="pi pi-user text-primary-600"></i> Customer & Shipping</span>
+          <p class="font-semibold text-surface-900">{{ selectedOrder()?.ShippingAddress?.Name || selectedOrder()?.User?.Name || 'Guest Customer' }}</p>
+          <p class="text-surface-600">{{ selectedOrder()?.ShippingAddress?.Street || 'Street address' }}</p>
+          <p class="text-surface-600">{{ selectedOrder()?.ShippingAddress?.Thana || '' }}{{ selectedOrder()?.ShippingAddress?.District ? ', ' + selectedOrder()?.ShippingAddress?.District : '' }}</p>
+          <p class="text-surface-600 font-mono">Phone: {{ selectedOrder()?.ShippingAddress?.Phone || selectedOrder()?.User?.Phone || '-' }}</p>
+        </div>
+
+        <div class="p-3.5 bg-surface-50 rounded-2xl border border-surface-200 flex flex-col gap-1">
+          <span class="font-bold text-surface-900 flex items-center gap-1.5"><i class="pi pi-receipt text-primary-600"></i> Payment Breakdown</span>
+          <div class="flex justify-between text-surface-600"><span>Subtotal:</span> <span class="font-bold text-surface-800">৳{{ selectedOrder()?.SubTotal || 0 }}</span></div>
+          <div class="flex justify-between text-surface-600"><span>Delivery:</span> <span class="font-bold text-surface-800">৳{{ selectedOrder()?.DeliveryCharge || 0 }}</span></div>
+          <div class="border-t border-surface-200 pt-1 flex justify-between font-extrabold text-sm text-primary-700">
+            <span>Total:</span> <span>৳{{ selectedOrder()?.GrandTotal || selectedOrder()?.SubTotal || 0 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Save Button Below The Form -->
+      <div class="flex items-center justify-end gap-2 pt-4 border-t border-surface-200 mt-1">
+        <p-button 
+          label="Cancel" 
+          severity="secondary" 
+          [outlined]="true" 
+          size="small" 
+          (onClick)="detailsDialogVisible.set(false)" 
+        />
+        <p-button 
+          label="Save Order Changes" 
+          icon="pi pi-check" 
+          severity="success" 
+          size="small" 
+          [loading]="saving()"
+          [disabled]="saving()"
+          (onClick)="saveOrderChanges()" 
+        />
+      </div>
+
+    </div>
+  }
+</p-dialog>

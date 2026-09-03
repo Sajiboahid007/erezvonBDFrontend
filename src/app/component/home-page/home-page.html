@@ -1,0 +1,389 @@
+<!-- Hero Section (Full-Width Main Banner Carousel) -->
+<section 
+  class="rezvon-hero"
+  (mouseenter)="stopAutoSlide()"
+  (mouseleave)="startAutoSlide()"
+>
+  <!-- Background Multi-Image Slides -->
+  <div class="hero-media-wrapper">
+    @for (slide of heroSlides(); track slide.id; let idx = $index) {
+      <div 
+        class="hero-slide-item"
+        [class.active-slide]="idx === currentSlideIndex()"
+      >
+        <img 
+          [src]="slide.imageUrl" 
+          [alt]="slide.headline || 'Rezvon Men Fashion'" 
+          class="hero-media-img"
+          loading="eager"
+        />
+      </div>
+    } @empty {
+      <div class="hero-media-fallback"></div>
+    }
+    
+    <!-- Left-weighted Dark Gradient Scrim Overlay for maximum text contrast on the left -->
+    <div class="hero-overlay-scrim"></div>
+  </div>
+
+  <!-- Left-Aligned Hero Content Overlay -->
+  <div class="container hero-content-container">
+    <div class="hero-content hero-content-left">
+      
+      <!-- Brand Eyebrow Badge (Database Store Name & Slide Category) -->
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        <span class="hero-badge-brand font-display font-extrabold">{{ settingsService.settingsSignal().StoreName || 'REZVON' }}</span>
+        <span class="hero-badge-sep">•</span>
+        <span class="hero-badge-highlight">{{ activeSlide()?.badge || '2026 COLLECTION' }}</span>
+      </div>
+
+      <!-- Left-Aligned Headline (Category Name from Database) -->
+      <h1 class="hero-title text-left">
+        {{ activeSlide()?.headline || 'Redefine Your Style' }}
+      </h1>
+
+      <!-- Left-Aligned Tagline & Brand Message from Database -->
+      <p class="hero-subtitle text-left">
+        {{ settingsService.settingsSignal().Tagline || "Premium Men's Fashion — New Collection Curated for Modern Bangladesh" }}
+      </p>
+
+      <!-- Left-Aligned Action Buttons -->
+      <div class="hero-actions hero-actions-left">
+        @if (activeSlide()?.link) {
+          <a 
+            [routerLink]="activeSlide()?.link" 
+            [queryParams]="activeSlide()?.queryParams"
+            class="hero-btn-primary"
+          >
+            <span>Shop {{ activeSlide()?.headline }}</span>
+            <i class="pi pi-arrow-right"></i>
+          </a>
+        } @else {
+          <a 
+            routerLink="/shop" 
+            class="hero-btn-primary"
+          >
+            <span>Shop Now</span>
+            <i class="pi pi-arrow-right"></i>
+          </a>
+        }
+        <a 
+          routerLink="/shop" 
+          [queryParams]="{ isFeatured: true }"
+          class="hero-btn-secondary"
+        >
+          <i class="pi pi-compass"></i>
+          <span>Explore Collection</span>
+        </a>
+      </div>
+
+      <!-- Trust Highlights Bar (Left-Aligned) -->
+      <div class="hero-metrics hero-metrics-left">
+        <div class="metric-item">
+          <span class="metric-value">100%</span>
+          <span class="metric-label">Authentic Fabric</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <span class="metric-value">64+</span>
+          <span class="metric-label">Districts Delivery</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <span class="metric-value">4.9 ★</span>
+          <span class="metric-label">Customer Rating</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Slider Navigation Controls (Previous & Next Arrows) -->
+  @if (heroSlides().length > 1) {
+    <button 
+      type="button" 
+      (click)="prevSlide()" 
+      class="slider-arrow slider-arrow-prev"
+      aria-label="Previous Slide"
+    >
+      <i class="pi pi-chevron-left"></i>
+    </button>
+
+    <button 
+      type="button" 
+      (click)="nextSlide()" 
+      class="slider-arrow slider-arrow-next"
+      aria-label="Next Slide"
+    >
+      <i class="pi pi-chevron-right"></i>
+    </button>
+
+    <!-- Slide Pagination Indicators (Clickable with Active Bar) -->
+    <div class="slider-pagination">
+      @for (slide of heroSlides(); track slide.id; let idx = $index) {
+        <button 
+          type="button" 
+          (click)="goToSlide(idx)" 
+          class="pagination-pill"
+          [class.active-pill]="idx === currentSlideIndex()"
+          [attr.aria-label]="'Go to slide ' + (idx + 1)"
+        >
+        </button>
+      }
+    </div>
+  }
+</section>
+
+<!-- Showcase Gallery Section -->
+<section class="rezvon-showcase">
+  <div class="container">
+    
+    <!-- Section Header -->
+    <div class="showcase-header">
+      <div class="showcase-title-wrap">
+        <span class="showcase-eyebrow">Signature Dress Collection</span>
+        <h2 class="showcase-heading">Curated Men's Showcase</h2>
+        <p class="showcase-desc">
+          Explore handcrafted men's ensembles engineered with precision tailoring, premium weaves, and contemporary cuts.
+        </p>
+      </div>
+      <a routerLink="/shop" class="showcase-view-all">
+        <span>View All Outfits</span>
+        <i class="pi pi-arrow-up-right"></i>
+      </a>
+    </div>
+
+    <!-- Showcase Grid (4 Top Items + Centered 5th Item) -->
+    <div class="showcase-grid-wrapper">
+      
+      <!-- Primary 4 items in top row -->
+      <div class="showcase-grid-row">
+        @for (item of showcaseItems().slice(0, 4); track item.id) {
+          <a 
+            [routerLink]="['/shop']" 
+            [queryParams]="item.categoryQuery"
+            class="gallery-card"
+          >
+            <div class="card-image-wrap">
+              @if (item.imageUrl) {
+                <img 
+                  [src]="item.imageUrl" 
+                  [alt]="item.altText" 
+                  class="card-img"
+                  loading="lazy"
+                />
+              } @else {
+                <div class="card-placeholder-wrap">
+                  <div class="card-placeholder-icon">
+                    <i class="pi pi-th-large"></i>
+                  </div>
+                  <span class="card-placeholder-title">{{ item.title }}</span>
+                  <span class="card-placeholder-sub">{{ item.badge }}</span>
+                </div>
+              }
+              <div class="card-overlay"></div>
+              
+              @if (item.badge) {
+                <span class="card-badge">{{ item.badge }}</span>
+              }
+
+              <div class="card-caption">
+                <div class="caption-text">
+                  <h3 class="caption-title">{{ item.title }}</h3>
+                  <p class="caption-subtitle">{{ item.subtitle }}</p>
+                </div>
+                <div class="card-action-btn">
+                  <i class="pi pi-arrow-right"></i>
+                </div>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+
+      <!-- 5th Featured / Centered Showcase Tile -->
+      @if (showcaseItems().length > 4) {
+        <div class="showcase-featured-row">
+          @let featuredItem = showcaseItems()[4];
+          <a 
+            [routerLink]="['/shop']" 
+            [queryParams]="featuredItem.categoryQuery"
+            class="gallery-card gallery-card-featured"
+          >
+            <div class="card-image-wrap">
+              @if (featuredItem.imageUrl) {
+                <img 
+                  [src]="featuredItem.imageUrl" 
+                  [alt]="featuredItem.altText" 
+                  class="card-img"
+                  loading="lazy"
+                />
+              } @else {
+                <div class="card-placeholder-wrap">
+                  <div class="card-placeholder-icon">
+                    <i class="pi pi-sparkles"></i>
+                  </div>
+                  <span class="card-placeholder-title">{{ featuredItem.title }}</span>
+                  <span class="card-placeholder-sub">{{ featuredItem.badge }}</span>
+                </div>
+              }
+              <div class="card-overlay"></div>
+
+              <div class="featured-pill">
+                <i class="pi pi-sparkles text-amber-400"></i>
+                <span>SIGNATURE SPOTLIGHT</span>
+              </div>
+
+              <div class="card-caption">
+                <div class="caption-text">
+                  <span class="caption-eyebrow">{{ featuredItem.badge }}</span>
+                  <h3 class="caption-title">{{ featuredItem.title }}</h3>
+                  <p class="caption-subtitle">{{ featuredItem.subtitle }}</p>
+                </div>
+                <div class="card-action-btn card-action-btn-wide">
+                  <span>Explore Look</span>
+                  <i class="pi pi-arrow-right"></i>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+      }
+
+    </div>
+
+  </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="py-16 bg-white border-t border-surface-200">
+  <div class="container flex flex-col gap-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
+      <div>
+        <span class="text-xs font-extrabold uppercase text-primary-600 tracking-wider">Handpicked For You</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-surface-900 font-display">Featured Products</h2>
+      </div>
+      <a routerLink="/shop" [queryParams]="{ isFeatured: true }" class="text-xs font-bold text-primary-600 hover:text-primary-800 flex items-center gap-1">
+        See All Featured <i class="pi pi-arrow-right text-[10px]"></i>
+      </a>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      @for (prod of featuredProducts(); track prod.Id) {
+        <div class="product-card flex flex-col justify-between group">
+          
+          <!-- Image and Badges -->
+          <div class="relative overflow-hidden aspect-[4/5] bg-surface-100">
+            <a [routerLink]="['/product', prod.Id]">
+              @if (prod.Images?.[0]?.ImageUrl) {
+                <img 
+                  [src]="prod.Images?.[0]?.ImageUrl" 
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                  alt="{{ prod.Name }}" 
+                />
+              } @else {
+                <div class="w-full h-full flex flex-col items-center justify-center bg-surface-100 text-surface-400 gap-1.5">
+                  <i class="pi pi-image text-3xl"></i>
+                  <span class="text-[11px] font-bold">No photo</span>
+                </div>
+              }
+            </a>
+
+            <!-- Badges -->
+            <div class="absolute top-3 left-3 flex flex-col gap-1.5">
+              @if (prod.DiscountPrice && (prod.DiscountPrice || 0) < (prod.RegularPrice || 0)) {
+                <span class="badge-discount">
+                  -{{ (((prod.RegularPrice || 0) - (prod.DiscountPrice || 0)) / (prod.RegularPrice || 1) * 100) | number:'1.0-0' }}% OFF
+                </span>
+              }
+              @if (prod.IsFeatured) {
+                <span class="badge-featured">Featured</span>
+              }
+            </div>
+
+            <!-- Quick Add overlay -->
+            <button 
+              (click)="quickAddToCart(prod, $event)" 
+              class="absolute bottom-3 left-3 right-3 py-2.5 rounded-xl bg-white/95 backdrop-blur-md text-surface-900 font-bold text-xs shadow-lg hover:bg-primary-600 hover:text-white transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 duration-300"
+            >
+              <i class="pi pi-shopping-cart"></i> Quick Add
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="p-4 flex flex-col gap-2">
+            <div class="flex items-center justify-between text-[11px] text-surface-400">
+              <span>{{ prod.Category?.Name || 'Apparel' }}</span>
+              <span>SKU: {{ prod.SKU }}</span>
+            </div>
+
+            <a [routerLink]="['/product', prod.Id]">
+              <h3 class="font-bold text-sm text-surface-900 hover:text-primary-600 transition-colors line-clamp-1">
+                {{ prod.Name }}
+              </h3>
+            </a>
+
+            <div class="flex items-baseline gap-2 mt-1">
+              <span class="text-base font-extrabold text-primary-700 font-display">
+                {{ settingsService.settingsSignal().CurrencySymbol }}{{ prod.DiscountPrice || prod.RegularPrice }}
+              </span>
+              @if (prod.DiscountPrice) {
+                <span class="text-xs text-surface-400 line-through">
+                  {{ settingsService.settingsSignal().CurrencySymbol }}{{ prod.RegularPrice }}
+                </span>
+              }
+            </div>
+          </div>
+
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Value Propositions Section (Right Above Footer with Up & Down Margins) -->
+<section class="rezvon-value-props">
+  <div class="container grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white border border-surface-200 shadow-sm">
+      <div class="w-12 h-12 rounded-xl bg-primary-100 text-primary-600 flex items-center justify-center shrink-0">
+        <i class="pi pi-truck text-2xl"></i>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm text-surface-900">Nationwide Delivery</h4>
+        <p class="text-xs text-surface-500">Fast shipping across all 64 districts</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white border border-surface-200 shadow-sm">
+      <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+        <i class="pi pi-shield text-2xl"></i>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm text-surface-900">100% Genuine</h4>
+        <p class="text-xs text-surface-500">Original quality & materials guaranteed</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white border border-surface-200 shadow-sm">
+      <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+        <i class="pi pi-refresh text-2xl"></i>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm text-surface-900">7 Days Exchange</h4>
+        <p class="text-xs text-surface-500">Hassle-free size or item replacement</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white border border-surface-200 shadow-sm">
+      <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+        <i class="pi pi-wallet text-2xl"></i>
+      </div>
+      <div>
+        <h4 class="font-bold text-sm text-surface-900">Cash on Delivery</h4>
+        <p class="text-xs text-surface-500">Pay when you receive your order</p>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,144 @@
+<div class="flex h-screen bg-surface-100 overflow-hidden font-sans text-surface-800">
+  
+  <!-- Sidebar -->
+  <aside 
+    [class.w-64]="sidebarOpen()" 
+    [class.w-20]="!sidebarOpen()" 
+    class="bg-surface-900 text-white flex flex-col justify-between transition-all duration-300 shadow-xl z-30 shrink-0"
+  >
+    <div class="flex flex-col">
+      
+      <!-- Brand & Toggle Header -->
+      <div class="h-16 flex items-center justify-between px-4 border-b border-surface-800">
+        @if (sidebarOpen()) {
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
+              <i class="pi pi-shield text-base"></i>
+            </div>
+            <span class="font-extrabold text-base tracking-tight font-display">
+              e-rezvon<span class="text-primary-400">Admin</span>
+            </span>
+          </div>
+        } @else {
+          <div class="w-8 h-8 mx-auto rounded-lg gradient-primary flex items-center justify-center text-white">
+            <i class="pi pi-shield text-base"></i>
+          </div>
+        }
+
+        <button (click)="toggleSidebar()" class="text-surface-400 hover:text-white p-1.5 rounded-lg hover:bg-surface-800 transition-colors">
+          <i [class.pi-angle-left]="sidebarOpen()" [class.pi-angle-right]="!sidebarOpen()" class="pi text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex flex-col gap-1.5 p-3 text-xs font-semibold">
+        
+        <a 
+          routerLink="/admin/dashboard" 
+          routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+          class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        >
+          <i class="pi pi-chart-line text-base"></i>
+          @if (sidebarOpen()) { <span>Dashboard</span> }
+        </a>
+
+        <a 
+          routerLink="/admin/products" 
+          routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+          class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        >
+          <i class="pi pi-box text-base"></i>
+          @if (sidebarOpen()) { <span>Products & Inventory</span> }
+        </a>
+
+        <a 
+          routerLink="/admin/orders" 
+          routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+          class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        >
+          <i class="pi pi-receipt text-base"></i>
+          @if (sidebarOpen()) { <span>Customer Orders</span> }
+        </a>
+
+        <a 
+          routerLink="/admin/delivery-history" 
+          routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+          class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        >
+          <i class="pi pi-check-circle text-base"></i>
+          @if (sidebarOpen()) { <span>Delivery History</span> }
+        </a>
+
+        <a 
+          routerLink="/admin/attributes" 
+          routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+          class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        >
+          <i class="pi pi-tags text-base"></i>
+          @if (sidebarOpen()) { <span>Store Attributes & Taxonomies</span> }
+        </a>
+
+        <a 
+          routerLink="/admin/settings" 
+          routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+          class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        >
+          <i class="pi pi-cog text-base"></i>
+          @if (sidebarOpen()) { <span>Store Settings</span> }
+        </a>
+
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom: Store link & Logout -->
+    <div class="p-3 border-t border-surface-800 flex flex-col gap-2">
+      <a 
+        routerLink="/" 
+        class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-800 text-surface-400 hover:text-white text-xs font-semibold transition-colors"
+      >
+        <i class="pi pi-external-link text-sm"></i>
+        @if (sidebarOpen()) { <span>Visit Storefront</span> }
+      </a>
+
+      <button 
+        (click)="logout()" 
+        class="flex items-center gap-3 p-2.5 rounded-xl text-rose-400 hover:bg-rose-950/40 hover:text-rose-300 text-xs font-semibold transition-colors text-left"
+      >
+        <i class="pi pi-sign-out text-sm"></i>
+        @if (sidebarOpen()) { <span>Sign Out</span> }
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    
+    <!-- Top Bar -->
+    <header class="h-16 bg-white border-b border-surface-200 flex items-center justify-between px-6 shrink-0">
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-bold uppercase tracking-wider text-surface-400">Admin Control Panel</span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <a routerLink="/" class="text-xs font-bold text-primary-600 hover:text-primary-800 flex items-center gap-1.5">
+          <i class="pi pi-home"></i> View Live Store
+        </a>
+
+        <div class="flex items-center gap-2 pl-3 border-l border-surface-200">
+          <div class="w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-xs">
+            A
+          </div>
+          <span class="text-xs font-bold text-surface-800">Administrator</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scrollable Main View -->
+    <main class="flex-1 overflow-y-auto p-6">
+      <router-outlet />
+    </main>
+
+  </div>
+
+</div>
