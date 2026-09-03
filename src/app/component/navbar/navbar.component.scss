@@ -1,3 +1,38 @@
 :host {
   display: block;
 }
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.category-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--surface-700);
+  background: var(--surface-100);
+  border: 1px solid var(--surface-200);
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--surface-200);
+    color: var(--surface-900);
+  }
+
+  &.active-pill {
+    background: var(--primary-600);
+    color: #ffffff;
+    border-color: var(--primary-600);
+  }
+}

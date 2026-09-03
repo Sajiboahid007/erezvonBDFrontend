@@ -43,6 +43,7 @@ export class ShopCatalogComponent implements OnInit {
   searchQuery = signal<string>('');
   currentPage = signal<number>(1);
   pageSize = signal<number>(12);
+  filterDrawerOpen = signal<boolean>(false);
 
   sortOptions = [
     { label: 'Newest Arrivals', value: 'newest' },
