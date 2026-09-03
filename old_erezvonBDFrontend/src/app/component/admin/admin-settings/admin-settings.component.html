@@ -1,0 +1,114 @@
+<div class="flex flex-col gap-6 max-w-4xl">
+  
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-surface-200 shadow-xs">
+    <div>
+      <h1 class="text-2xl font-extrabold text-surface-900 font-display">Shop Configuration & Settings</h1>
+      <p class="text-xs text-surface-500">Manage delivery charges, threshold limits, store branding, and contact details.</p>
+    </div>
+  </div>
+
+  <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()" class="bg-white p-6 sm:p-8 rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-6">
+    
+    <!-- Branding -->
+    <div>
+      <h3 class="font-bold text-sm text-surface-900 mb-3 border-b border-surface-100 pb-2">Branding & Store Profile</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">Store Name</label>
+          <input type="text" pInputText formControlName="StoreName" class="p-3 text-xs rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">Tagline</label>
+          <input type="text" pInputText formControlName="Tagline" class="p-3 text-xs rounded-xl" />
+        </div>
+      </div>
+
+      <!-- Hero Banner Image Upload -->
+      <div class="flex flex-col gap-2 mt-4 pt-3 border-t border-surface-100">
+        <label class="font-bold text-surface-700 text-xs">Homepage Hero Banner Image (Uploaded to Database)</label>
+        
+        @if (bannerImagePreview()) {
+          <div class="relative w-full max-w-lg aspect-[16/7] rounded-2xl overflow-hidden border border-surface-200 shadow-xs group bg-surface-900">
+            <img [src]="bannerImagePreview()" alt="Hero Banner Preview" class="w-full h-full object-cover" />
+            <button 
+              type="button" 
+              (click)="removeBanner()" 
+              class="absolute top-2 right-2 w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md hover:bg-rose-700 transition-colors"
+            >
+              <i class="pi pi-trash text-xs"></i>
+            </button>
+          </div>
+        } @else {
+          <p-fileupload 
+            #bannerUploader
+            mode="basic" 
+            name="banner" 
+            accept="image/*" 
+            maxFileSize="10000000" 
+            chooseLabel="Upload Homepage Hero Banner" 
+            chooseIcon="pi pi-image" 
+            (onSelect)="onBannerSelect($event)" 
+            [auto]="true" 
+            [disabled]="isBannerUploading()"
+            styleClass="p-button-outlined p-button-sm text-xs rounded-xl"
+          />
+        }
+        <span class="text-[11px] text-surface-400">Recommended dimensions: 1920x1080px (Landscape). Uploaded banner will be displayed dynamically on the homepage hero.</span>
+      </div>
+    </div>
+
+    <!-- Delivery Rates -->
+    <div>
+      <h3 class="font-bold text-sm text-surface-900 mb-3 border-b border-surface-100 pb-2">Delivery Charges & Thresholds</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">Inside Dhaka (৳)</label>
+          <input type="number" pInputText formControlName="InsideDhakaDeliveryCharge" class="p-3 text-xs rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">Outside Dhaka (৳)</label>
+          <input type="number" pInputText formControlName="OutsideDhakaDeliveryCharge" class="p-3 text-xs rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">Free Delivery Minimum (৳)</label>
+          <input type="number" pInputText formControlName="FreeDeliveryThreshold" class="p-3 text-xs rounded-xl" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact & Social -->
+    <div>
+      <h3 class="font-bold text-sm text-surface-900 mb-3 border-b border-surface-100 pb-2">Contact & Social Channels</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">Support Phone</label>
+          <input type="text" pInputText formControlName="Phone" class="p-3 text-xs rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">WhatsApp Number</label>
+          <input type="text" pInputText formControlName="WhatsApp" class="p-3 text-xs rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">Support Email</label>
+          <input type="email" pInputText formControlName="Email" class="p-3 text-xs rounded-xl" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="font-bold text-surface-700">Store Address</label>
+          <input type="text" pInputText formControlName="Address" class="p-3 text-xs rounded-xl" />
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end pt-4 border-t border-surface-200">
+      <button 
+        type="submit" 
+        [disabled]="saving()"
+        class="px-6 py-3 rounded-xl gradient-primary text-white font-bold text-xs shadow-md flex items-center gap-2"
+      >
+        <i class="pi pi-check"></i> Save Store Settings
+      </button>
+    </div>
+
+  </form>
+</div>

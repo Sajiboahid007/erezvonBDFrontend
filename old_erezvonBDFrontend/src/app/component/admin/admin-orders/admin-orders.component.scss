@@ -1,0 +1,25 @@
+:host {
+  display: block;
+}
+
+:host ::ng-deep {
+  .p-datatable {
+    .p-datatable-thead > tr > th {
+      padding: 1.1rem 1.25rem !important;
+      font-size: 0.72rem !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.04em !important;
+      color: #475569 !important;
+      background-color: #f8fafc !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 1rem 1.25rem !important;
+    }
+  }
+
+  .p-button {
+    white-space: nowrap !important;
+  }
+}

@@ -1,0 +1,152 @@
+<p-drawer 
+  [visible]="cartService.cartDrawerSignal()" 
+  (visibleChange)="cartService.cartDrawerSignal.set($event)" 
+  position="right" 
+  styleClass="w-full sm:w-96 md:w-[420px]"
+>
+  <ng-template #header>
+    <div class="flex items-center gap-2">
+      <i class="pi pi-shopping-bag text-primary-600 text-lg"></i>
+      <span class="font-bold text-base font-display text-surface-900">Your Shopping Cart</span>
+      <span class="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-bold">
+        {{ cartService.itemCount() }}
+      </span>
+    </div>
+  </ng-template>
+
+  <div class="flex flex-col h-full justify-between">
+    
+    <!-- Cart Items List -->
+    @if (cartService.cartItems().length > 0) {
+      <div class="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 py-2">
+        @for (item of cartService.cartItems(); track item.Id) {
+          <div class="flex gap-3 p-3 bg-surface-50 border border-surface-200 rounded-2xl relative group">
+            
+            <!-- Item Thumbnail -->
+            @if (item.ProductVariant?.Product?.Images?.[0]?.ImageUrl) {
+              <img 
+                [src]="item.ProductVariant?.Product?.Images?.[0]?.ImageUrl" 
+                class="w-16 h-20 object-cover rounded-xl border border-surface-200 shrink-0 bg-white" 
+                alt="Cart item" 
+              />
+            } @else {
+              <div class="w-16 h-20 bg-surface-100 rounded-xl border border-surface-200 flex items-center justify-center text-surface-400 shrink-0">
+                <i class="pi pi-image text-sm"></i>
+              </div>
+            }
+
+            <!-- Item Details -->
+            <div class="flex-1 flex flex-col justify-between min-w-0">
+              <div>
+                <div class="flex justify-between items-start gap-1">
+                  <h4 class="text-xs font-bold text-surface-800 line-clamp-1">
+                    {{ item.ProductVariant?.Product?.Name }}
+                  </h4>
+                  <button 
+                    (click)="removeItem(item.Id)" 
+                    class="text-surface-400 hover:text-rose-600 p-0.5 transition-colors"
+                    title="Remove Item"
+                  >
+                    <i class="pi pi-trash text-xs"></i>
+                  </button>
+                </div>
+
+                <!-- Variant badges (Size & Color) -->
+                <div class="flex items-center gap-1.5 mt-1 text-[11px] text-surface-500 font-medium">
+                  @if (item.ProductVariant?.Size?.Name) {
+                    <span class="px-1.5 py-0.5 bg-surface-200 rounded text-surface-700 font-bold">
+                      {{ item.ProductVariant?.Size?.Name }}
+                    </span>
+                  }
+                  @if (item.ProductVariant?.Color?.Name) {
+                    <span class="flex items-center gap-1">
+                      <span 
+                        class="w-2.5 h-2.5 rounded-full inline-block border border-surface-300"
+                        [style.background-color]="item.ProductVariant?.Color?.HexCode || '#ccc'"
+                      ></span>
+                      {{ item.ProductVariant?.Color?.Name }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <!-- Price and Quantity Stepper -->
+              <div class="flex items-center justify-between mt-2 pt-1 border-t border-surface-200/60">
+                <span class="text-xs font-extrabold text-primary-700">
+                  {{ settingsService.settingsSignal().CurrencySymbol }}{{ (item.ProductVariant?.Product?.DiscountPrice || item.ProductVariant?.Product?.RegularPrice || 0) + (item.ProductVariant?.AdditionalPrice || 0) }}
+                </span>
+
+                <div class="flex items-center border border-surface-300 rounded-lg bg-white overflow-hidden shadow-2xs">
+                  <button 
+                    (click)="decrementQuantity(item.Id, item.Quantity)" 
+                    class="w-6 h-6 flex items-center justify-center text-surface-600 hover:bg-surface-100 transition-colors"
+                  >
+                    <i class="pi pi-minus text-[9px]"></i>
+                  </button>
+                  <span class="w-7 text-center text-xs font-bold text-surface-800">
+                    {{ item.Quantity }}
+                  </span>
+                  <button 
+                    (click)="incrementQuantity(item.Id, item.Quantity)" 
+                    class="w-6 h-6 flex items-center justify-center text-surface-600 hover:bg-surface-100 transition-colors"
+                  >
+                    <i class="pi pi-plus text-[9px]"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        }
+      </div>
+
+      <!-- Footer & Checkout Trigger -->
+      <div class="border-t border-surface-200 pt-4 mt-2 flex flex-col gap-3">
+        <div class="flex justify-between items-center text-sm">
+          <span class="text-surface-500 font-medium">Subtotal</span>
+          <span class="text-base font-extrabold text-surface-900">
+            {{ settingsService.settingsSignal().CurrencySymbol }}{{ cartService.subTotal() | number }}
+          </span>
+        </div>
+
+        <p class="text-[11px] text-surface-400 text-center">
+          Shipping & taxes calculated at checkout.
+        </p>
+
+        <div class="flex flex-col gap-2">
+          <button 
+            (click)="goToCheckout()" 
+            class="w-full py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-sm shadow-md shadow-primary-600/30 flex items-center justify-center gap-2 transition-all"
+          >
+            <i class="pi pi-credit-card"></i> Proceed to Checkout
+          </button>
+          <button 
+            (click)="goToCart()" 
+            class="w-full py-2.5 rounded-xl bg-surface-100 hover:bg-surface-200 text-surface-800 font-semibold text-xs transition-colors"
+          >
+            View Full Cart
+          </button>
+        </div>
+      </div>
+    } @else {
+      <!-- Empty Cart State -->
+      <div class="flex-1 flex flex-col items-center justify-center text-center p-6 gap-3">
+        <div class="w-16 h-16 rounded-full bg-surface-100 flex items-center justify-center text-surface-400">
+          <i class="pi pi-shopping-bag text-3xl"></i>
+        </div>
+        <h3 class="text-base font-bold text-surface-800">Your cart is empty</h3>
+        <p class="text-xs text-surface-500 max-w-xs">
+          Explore our collection and add your favorite items to begin shopping.
+        </p>
+        <button 
+          (click)="closeDrawer()" 
+          routerLink="/shop"
+          class="mt-2 px-5 py-2 rounded-xl bg-primary-600 text-white text-xs font-bold shadow-md hover:bg-primary-700 transition-all"
+        >
+          Start Shopping
+        </button>
+      </div>
+    }
+
+  </div>
+</p-drawer>

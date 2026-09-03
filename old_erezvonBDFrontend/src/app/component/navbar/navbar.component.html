@@ -1,0 +1,270 @@
+<!-- Top Notification Bar -->
+<div class="bg-surface-900 text-surface-200 text-xs py-2 px-4 border-b border-surface-800">
+  <div class="container flex justify-between items-center">
+    <div class="flex items-center gap-4">
+      <span class="flex items-center gap-1.5 text-emerald-400 font-medium">
+        <i class="pi pi-bolt text-xs"></i> Free Express Delivery on orders over {{ settingsService.settingsSignal().CurrencySymbol }}{{ settingsService.settingsSignal().FreeDeliveryThreshold }}
+      </span>
+    </div>
+    <div class="flex items-center gap-6 text-surface-300">
+      <span class="flex items-center gap-1.5">
+        <i class="pi pi-phone text-xs"></i> {{ settingsService.settingsSignal().Phone || '+880 1700-000000' }}
+      </span>
+      <span class="hidden md:flex items-center gap-1.5">
+        <i class="pi pi-map-marker text-xs"></i> Nationwide Delivery in Bangladesh
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Main Header -->
+<header class="sticky top-0 z-40 bg-white border-b border-surface-200 shadow-xs transition-all">
+  <div class="container flex items-center justify-between py-3.5 gap-4">
+    
+    <!-- Mobile Hamburger & Logo -->
+    <div class="flex items-center gap-3">
+      <button class="md:hidden p-2 text-surface-700 hover:text-primary-600 focus:outline-none" (click)="mobileMenuOpen.set(true)">
+        <i class="pi pi-bars text-xl"></i>
+      </button>
+
+      <a routerLink="/" class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md text-white">
+          <i class="pi pi-shopping-bag text-xl"></i>
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-wider font-display text-surface-900">
+            REZVON<span class="text-primary-600">.</span>
+          </span>
+          <p class="text-[10px] uppercase font-bold text-surface-400 tracking-wider -mt-1">
+            Men's Fashion & Lifestyle
+          </p>
+        </div>
+      </a>
+    </div>
+
+    <!-- Live Search Bar with Dropdown -->
+    <div class="relative flex-1 max-w-xl hidden md:block">
+      <p-iconfield iconPosition="left" class="w-full">
+        <p-inputicon class="pi pi-search text-surface-400" />
+        <input 
+          type="text" 
+          pInputText 
+          placeholder="Search products, brands, fabrics..." 
+          class="w-full rounded-full bg-surface-100/80 border-surface-200 hover:border-primary-400 focus:border-primary-600 focus:bg-white text-sm py-2.5 pl-10 pr-4 transition-all"
+          [ngModel]="searchQuery()" 
+          (ngModelChange)="searchQuery.set($event)"
+          (input)="onSearchInput()"
+          (keyup.enter)="submitSearch()"
+        />
+      </p-iconfield>
+
+      <!-- Autocomplete Dropdown -->
+      @if (searchResults().length > 0) {
+        <div class="absolute left-0 right-0 top-12 bg-white rounded-2xl shadow-2xl border border-surface-200 p-2 z-50 max-h-96 overflow-y-auto">
+          <div class="text-xs font-bold text-surface-400 px-3 py-1.5 uppercase">Search Results ({{ searchResults().length }})</div>
+          @for (prod of searchResults(); track prod.Id) {
+            <div 
+              (click)="selectProduct(prod)" 
+              class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-surface-50 cursor-pointer transition-colors"
+            >
+              @if (prod.Images?.[0]?.ImageUrl) {
+                <img 
+                  [src]="prod.Images?.[0]?.ImageUrl" 
+                  class="w-12 h-12 object-cover rounded-lg border border-surface-200" 
+                  alt="Product" 
+                />
+              } @else {
+                <div class="w-12 h-12 rounded-lg bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-400 shrink-0">
+                  <i class="pi pi-image text-xs"></i>
+                </div>
+              }
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-sm text-surface-800 truncate">{{ prod.Name }}</div>
+                <div class="text-xs text-surface-500">{{ prod.Category?.Name || 'General' }} &bull; SKU: {{ prod.SKU }}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-primary-600 text-sm">
+                  ৳{{ prod.DiscountPrice || prod.RegularPrice }}
+                </div>
+                @if (prod.DiscountPrice) {
+                  <div class="text-xs text-surface-400 line-through">৳{{ prod.RegularPrice }}</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Actions & Profile -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      
+      <!-- Admin Link if authorized -->
+      @if (authService.isAdmin()) {
+        <a 
+          routerLink="/admin/dashboard" 
+          class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-900 text-amber-400 font-semibold text-xs border border-amber-500/30 hover:bg-black transition-all"
+        >
+          <i class="pi pi-shield"></i> Admin Portal
+        </a>
+      }
+
+      <!-- Cart Button with Counter -->
+      <button 
+        (click)="toggleCart()" 
+        class="relative p-2.5 rounded-xl text-surface-700 hover:bg-surface-100 hover:text-primary-600 transition-colors flex items-center gap-2"
+        title="Shopping Cart"
+      >
+        <i class="pi pi-shopping-cart text-xl"></i>
+        @if (cartService.itemCount() > 0) {
+          <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[11px] font-bold h-5 min-w-[20px] px-1 rounded-full flex items-center justify-center shadow-md animate-pulse">
+            {{ cartService.itemCount() }}
+          </span>
+        }
+        <span class="hidden sm:inline font-bold text-xs text-surface-900">
+          ৳{{ cartService.subTotal() | number }}
+        </span>
+      </button>
+
+      <!-- Account Trigger -->
+      @if (authService.isAuthenticated()) {
+        <div class="relative">
+          <button 
+            (click)="toggleUserMenu()" 
+            class="flex items-center gap-2 p-1.5 rounded-xl hover:bg-surface-100 text-surface-800 transition-all border border-transparent hover:border-surface-200"
+          >
+            <div class="w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-sm border border-primary-200">
+              {{ (authService.currentUserSignal()?.Name || 'U').charAt(0).toUpperCase() }}
+            </div>
+            <span class="hidden lg:inline text-xs font-semibold max-w-[100px] truncate">
+              {{ authService.currentUserSignal()?.Name }}
+            </span>
+            <i class="pi pi-angle-down text-xs text-surface-400"></i>
+          </button>
+          
+          <!-- Profile Dropdown (Only visible when userMenuOpen is true) -->
+          @if (userMenuOpen()) {
+            <!-- Backdrop to close on click outside -->
+            <div (click)="closeUserMenu()" class="fixed inset-0 z-40"></div>
+
+            <div class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-surface-200 py-2 z-50 animate-fadein">
+              <div class="px-4 py-2 border-b border-surface-100">
+                <p class="text-[10px] uppercase font-bold text-surface-400">Signed in as</p>
+                <p class="text-xs font-bold text-surface-800 truncate">{{ authService.currentUserSignal()?.Email || authService.currentUserSignal()?.Phone }}</p>
+              </div>
+              <a 
+                routerLink="/my-orders" 
+                (click)="closeUserMenu()" 
+                class="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-surface-700 hover:bg-surface-50 transition-colors"
+              >
+                <i class="pi pi-receipt text-primary-500"></i> My Orders
+              </a>
+              @if (authService.isAdmin()) {
+                <a 
+                  routerLink="/admin/dashboard" 
+                  (click)="closeUserMenu()" 
+                  class="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-surface-700 hover:bg-surface-50 transition-colors"
+                >
+                  <i class="pi pi-shield text-amber-500"></i> Admin Panel
+                </a>
+              }
+              <div class="border-t border-surface-100 my-1"></div>
+              <button 
+                (click)="logout()" 
+                class="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left transition-colors"
+              >
+                <i class="pi pi-sign-out"></i> Logout
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <a 
+          routerLink="/auth/login" 
+          class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs transition-all shadow-sm shadow-primary-500/20"
+        >
+          <i class="pi pi-user"></i> <span>Login</span>
+        </a>
+      }
+
+    </div>
+  </div>
+
+  <!-- Navigation Bar (Categories Links) -->
+  <nav class="bg-surface-50/80 border-t border-surface-200 hidden md:block">
+    <div class="container flex items-center gap-8 py-2.5 text-xs font-bold uppercase tracking-wider text-surface-700">
+      <a routerLink="/" routerLinkActive="text-primary-600" [routerLinkActiveOptions]="{ exact: true }" class="hover:text-primary-600 transition-colors flex items-center gap-1">
+        <i class="pi pi-home text-sm"></i> Home
+      </a>
+      <a routerLink="/shop" routerLinkActive="text-primary-600" [routerLinkActiveOptions]="{ exact: true }" class="hover:text-primary-600 transition-colors">
+        All Products
+      </a>
+      
+      @for (cat of categories(); track cat.Id) {
+        <a [routerLink]="['/shop']" [queryParams]="{ categoryId: cat.Id }" class="hover:text-primary-600 transition-colors">
+          {{ cat.Name }}
+        </a>
+      }
+    </div>
+  </nav>
+</header>
+
+<!-- Mobile Navigation Drawer -->
+<p-drawer [visible]="mobileMenuOpen()" (visibleChange)="mobileMenuOpen.set($event)" position="left" styleClass="w-80">
+  <ng-template #header>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
+        <i class="pi pi-shopping-bag text-base"></i>
+      </div>
+      <span class="font-bold text-lg font-display text-surface-900">REZVON<span class="text-primary-600">.</span></span>
+    </div>
+  </ng-template>
+  
+  <div class="flex flex-col gap-4 py-2">
+    <!-- Mobile Search -->
+    <div class="relative">
+      <input 
+        type="text" 
+        placeholder="Search products..." 
+        class="w-full rounded-xl bg-surface-100 border border-surface-200 text-sm py-2 px-3 focus:outline-none"
+        [ngModel]="searchQuery()" 
+        (ngModelChange)="searchQuery.set($event)"
+        (keyup.enter)="submitSearch(); mobileMenuOpen.set(false)"
+      />
+    </div>
+
+    <!-- Navigation links -->
+    <div class="flex flex-col gap-1 text-sm font-semibold text-surface-800">
+      <a routerLink="/" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-lg hover:bg-surface-100 flex items-center gap-2">
+        <i class="pi pi-home text-primary-600"></i> Home
+      </a>
+      <a routerLink="/shop" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-lg hover:bg-surface-100 flex items-center gap-2">
+        <i class="pi pi-th-large text-primary-600"></i> All Products
+      </a>
+      <a routerLink="/my-orders" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-lg hover:bg-surface-100 flex items-center gap-2">
+        <i class="pi pi-receipt text-primary-600"></i> My Orders
+      </a>
+      @if (authService.isAdmin()) {
+        <a routerLink="/admin/dashboard" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-lg bg-amber-50 text-amber-900 flex items-center gap-2">
+          <i class="pi pi-shield text-amber-600"></i> Admin Panel
+        </a>
+      }
+    </div>
+
+    <div class="border-t border-surface-200 my-2"></div>
+    <div class="text-xs font-bold uppercase text-surface-400 px-2">Categories</div>
+    <div class="flex flex-col gap-1 text-sm">
+      @for (cat of categories(); track cat.Id) {
+        <a 
+          [routerLink]="['/shop']" 
+          [queryParams]="{ categoryId: cat.Id }" 
+          (click)="mobileMenuOpen.set(false)" 
+          class="p-2 rounded-lg hover:bg-surface-100 text-surface-700 flex justify-between items-center"
+        >
+          <span>{{ cat.Name }}</span>
+          <i class="pi pi-angle-right text-xs text-surface-400"></i>
+        </a>
+      }
+    </div>
+  </div>
+</p-drawer>

@@ -1,0 +1,56 @@
+:host {
+  display: block;
+}
+
+.tab-btn {
+  padding: 0.625rem 1.1rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease-in-out;
+  color: #334155;
+  background-color: transparent;
+  cursor: pointer;
+  border: none;
+  font-size: 0.75rem;
+
+  &:hover:not(.active-tab) {
+    background-color: #f1f5f9;
+    color: #0f172a;
+  }
+
+  &.active-tab {
+    background-color: #059669 !important; /* Emerald 600 Success */
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px -1px rgba(5, 150, 105, 0.35);
+  }
+}
+
+:host ::ng-deep {
+  .p-datatable {
+    .p-datatable-thead > tr > th {
+      padding: 1.1rem 1.25rem !important;
+      font-size: 0.72rem !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.04em !important;
+      color: #475569 !important;
+      background-color: #f8fafc !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 1rem 1.25rem !important;
+    }
+  }
+
+  .p-button {
+    white-space: nowrap !important;
+  }
+
+  .p-button .p-button-label {
+    white-space: nowrap !important;
+    font-weight: 700;
+  }
+}

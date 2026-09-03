@@ -1,0 +1,1154 @@
+<div class="flex flex-col gap-6">
+
+  <!-- Tabs Header -->
+  <div class="flex flex-wrap items-center gap-2 p-2 bg-white rounded-2xl border border-surface-200 w-fit text-xs shadow-xs">
+    <button 
+      (click)="activeTab.set('categories')" 
+      class="tab-btn"
+      [class.active-tab]="activeTab() === 'categories'"
+    >
+      <i class="pi pi-list"></i> Categories ({{ categories().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('subcategories')" 
+      class="tab-btn"
+      [class.active-tab]="activeTab() === 'subcategories'"
+    >
+      <i class="pi pi-sitemap"></i> Sub-Categories ({{ subCategories().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('sizes')" 
+      class="tab-btn"
+      [class.active-tab]="activeTab() === 'sizes'"
+    >
+      <i class="pi pi-tag"></i> Sizes ({{ sizes().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('colors')" 
+      class="tab-btn"
+      [class.active-tab]="activeTab() === 'colors'"
+    >
+      <i class="pi pi-palette"></i> Colors ({{ colors().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('statuses')" 
+      class="tab-btn"
+      [class.active-tab]="activeTab() === 'statuses'"
+    >
+      <i class="pi pi-clock"></i> Order Statuses ({{ orderStatuses().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('payments')" 
+      class="tab-btn"
+      [class.active-tab]="activeTab() === 'payments'"
+    >
+      <i class="pi pi-credit-card"></i> Payment Methods ({{ paymentMethods().length }})
+    </button>
+    <button 
+      (click)="activeTab.set('roles')" 
+      class="tab-btn"
+      [class.active-tab]="activeTab() === 'roles'"
+    >
+      <i class="pi pi-users"></i> Roles ({{ roles().length }})
+    </button>
+  </div>
+
+  <!-- Categories Tab Content -->
+  @if (activeTab() === 'categories') {
+    <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+      <p-table 
+        #dtCat
+        [value]="categories()" 
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories"
+        [globalFilterFields]="['Name']"
+        [rowHover]="true"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm p-datatable-hoverable"
+      >
+        <ng-template #caption>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-extrabold text-surface-800 font-display">Categories Registry</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold font-mono">
+                {{ categories().length }} total
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <p-iconfield iconPosition="left" class="w-full sm:w-64">
+                <p-inputicon styleClass="pi pi-search text-xs" />
+                <input 
+                  pInputText 
+                  type="text" 
+                  (input)="dtCat.filterGlobal($any($event.target).value, 'contains')" 
+                  placeholder="Search categories..." 
+                  class="w-full text-xs p-2 rounded-xl"
+                />
+              </p-iconfield>
+
+              <p-button 
+                label="Add Category" 
+                icon="pi pi-plus" 
+                size="small" 
+                severity="success" 
+                styleClass="whitespace-nowrap shrink-0"
+                (onClick)="openNewCategory()" 
+              />
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template #header>
+          <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+            <th class="py-3.5 px-4 w-20">Photo</th>
+            <th pSortableColumn="Name" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Category Name <p-sortIcon field="Name" />
+              </div>
+            </th>
+            <th class="py-3.5 px-4 text-center w-28">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-cat>
+          <tr class="text-xs text-surface-800 border-b border-surface-100 hover:bg-surface-50/80 transition-colors">
+            <td class="py-3 px-4 w-20">
+              @if (cat.ImageUrl) {
+                <img [src]="cat.ImageUrl" class="w-10 h-10 rounded-xl object-cover border border-surface-200 shadow-2xs" alt="Category" />
+              } @else {
+                <div class="w-10 h-10 rounded-xl bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-400">
+                  <i class="pi pi-image text-xs"></i>
+                </div>
+              }
+            </td>
+            <td class="py-3 px-4 font-bold text-surface-900">{{ cat.Name }}</td>
+            <td class="py-3 px-4 text-center w-28">
+              <div class="flex items-center justify-center gap-1.5">
+                <p-button 
+                  icon="pi pi-pencil" 
+                  [rounded]="true" 
+                  severity="success" 
+                  size="small" 
+                  (onClick)="openEditCategory(cat)" 
+                  pTooltip="Edit Category" 
+                  tooltipPosition="top"
+                />
+                <p-button 
+                  icon="pi pi-trash" 
+                  [rounded]="true" 
+                  severity="danger" 
+                  size="small" 
+                  (onClick)="deleteCategory(cat)" 
+                  pTooltip="Delete Category" 
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="3" class="text-center py-8 text-surface-400 text-xs font-semibold">
+              No categories found.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- Subcategories Tab Content -->
+  @if (activeTab() === 'subcategories') {
+    <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+      <p-table 
+        #dtSub
+        [value]="subCategories()" 
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} sub-categories"
+        [globalFilterFields]="['Name', 'Category.Name']"
+        [rowHover]="true"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm p-datatable-hoverable"
+      >
+        <ng-template #caption>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-extrabold text-surface-800 font-display">Sub-Categories Registry</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold font-mono">
+                {{ subCategories().length }} total
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <p-iconfield iconPosition="left" class="w-full sm:w-64">
+                <p-inputicon styleClass="pi pi-search text-xs" />
+                <input 
+                  pInputText 
+                  type="text" 
+                  (input)="dtSub.filterGlobal($any($event.target).value, 'contains')" 
+                  placeholder="Search sub-categories..." 
+                  class="w-full text-xs p-2 rounded-xl"
+                />
+              </p-iconfield>
+
+              <p-button 
+                label="Add Sub-Category" 
+                icon="pi pi-plus" 
+                size="small" 
+                severity="success" 
+                styleClass="whitespace-nowrap shrink-0"
+                (onClick)="openNewSubCategory()" 
+              />
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template #header>
+          <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+            <th class="py-3.5 px-4 w-20">Photo</th>
+            <th pSortableColumn="Name" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Sub-Category <p-sortIcon field="Name" />
+              </div>
+            </th>
+            <th pSortableColumn="Category.Name" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Parent Category <p-sortIcon field="Category.Name" />
+              </div>
+            </th>
+            <th class="py-3.5 px-4 text-center w-28">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-sub>
+          <tr class="text-xs text-surface-800 border-b border-surface-100 hover:bg-surface-50/80 transition-colors">
+            <td class="py-3 px-4 w-20">
+              @if (sub.ImageUrl) {
+                <img [src]="sub.ImageUrl" class="w-10 h-10 rounded-xl object-cover border border-surface-200 shadow-2xs" alt="Subcategory" />
+              } @else {
+                <div class="w-10 h-10 rounded-xl bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-400">
+                  <i class="pi pi-image text-xs"></i>
+                </div>
+              }
+            </td>
+            <td class="py-3 px-4 font-bold text-surface-900">{{ sub.Name }}</td>
+            <td class="py-3 px-4">
+              <span class="px-2.5 py-1 rounded-lg bg-surface-100 font-semibold text-[11px] text-surface-700 border border-surface-200">
+                {{ sub.Category?.Name || 'General' }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center w-28">
+              <div class="flex items-center justify-center gap-1.5">
+                <p-button 
+                  icon="pi pi-pencil" 
+                  [rounded]="true" 
+                  severity="success" 
+                  size="small" 
+                  (onClick)="openEditSubCategory(sub)" 
+                  pTooltip="Edit SubCategory" 
+                  tooltipPosition="top"
+                />
+                <p-button 
+                  icon="pi pi-trash" 
+                  [rounded]="true" 
+                  severity="danger" 
+                  size="small" 
+                  (onClick)="deleteSubCategory(sub)" 
+                  pTooltip="Delete SubCategory" 
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="4" class="text-center py-8 text-surface-400 text-xs font-semibold">
+              No sub-categories found.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- Sizes Tab Content -->
+  @if (activeTab() === 'sizes') {
+    <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+      <p-table 
+        #dtSize
+        [value]="sizes()" 
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} sizes"
+        [globalFilterFields]="['Name']"
+        [rowHover]="true"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm p-datatable-hoverable"
+      >
+        <ng-template #caption>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-extrabold text-surface-800 font-display">Available Sizes</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold font-mono">
+                {{ sizes().length }} total
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <p-iconfield iconPosition="left" class="w-full sm:w-64">
+                <p-inputicon styleClass="pi pi-search text-xs" />
+                <input 
+                  pInputText 
+                  type="text" 
+                  (input)="dtSize.filterGlobal($any($event.target).value, 'contains')" 
+                  placeholder="Search sizes..." 
+                  class="w-full text-xs p-2 rounded-xl"
+                />
+              </p-iconfield>
+
+              <p-button 
+                label="Add Size" 
+                icon="pi pi-plus" 
+                size="small" 
+                severity="success" 
+                styleClass="whitespace-nowrap shrink-0"
+                (onClick)="openNewSize()" 
+              />
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template #header>
+          <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+            <th pSortableColumn="Name" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Size Name <p-sortIcon field="Name" />
+              </div>
+            </th>
+            <th class="py-3.5 px-4 text-center w-28">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-s>
+          <tr class="text-xs border-b border-surface-100 hover:bg-surface-50 transition-colors">
+            <td class="py-3 px-4">
+              <span class="px-3.5 py-1.5 rounded-lg bg-surface-100 font-extrabold text-xs text-surface-900 border border-surface-200 font-mono">
+                {{ s.Name }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center w-28">
+              <div class="flex items-center justify-center gap-1.5">
+                <p-button 
+                  icon="pi pi-pencil" 
+                  [rounded]="true" 
+                  severity="success" 
+                  size="small" 
+                  (onClick)="openEditSize(s)" 
+                  pTooltip="Edit Size" 
+                  tooltipPosition="top"
+                />
+                <p-button 
+                  icon="pi pi-trash" 
+                  [rounded]="true" 
+                  severity="danger" 
+                  size="small" 
+                  (onClick)="deleteSize(s)" 
+                  pTooltip="Delete Size" 
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="2" class="text-center py-8 text-surface-400 text-xs font-semibold">
+              No sizes found.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- Colors Tab Content -->
+  @if (activeTab() === 'colors') {
+    <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+      <p-table 
+        #dtCol
+        [value]="colors()" 
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} colors"
+        [globalFilterFields]="['Name', 'HexCode']"
+        [rowHover]="true"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm p-datatable-hoverable"
+      >
+        <ng-template #caption>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-extrabold text-surface-800 font-display">Color Palette</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold font-mono">
+                {{ colors().length }} total
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <p-iconfield iconPosition="left" class="w-full sm:w-64">
+                <p-inputicon styleClass="pi pi-search text-xs" />
+                <input 
+                  pInputText 
+                  type="text" 
+                  (input)="dtCol.filterGlobal($any($event.target).value, 'contains')" 
+                  placeholder="Search colors..." 
+                  class="w-full text-xs p-2 rounded-xl"
+                />
+              </p-iconfield>
+
+              <p-button 
+                label="Add Color" 
+                icon="pi pi-plus" 
+                size="small" 
+                severity="success" 
+                styleClass="whitespace-nowrap shrink-0"
+                (onClick)="openNewColor()" 
+              />
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template #header>
+          <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+            <th class="py-3.5 px-4 w-20">Swatch</th>
+            <th pSortableColumn="Name" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Color Name <p-sortIcon field="Name" />
+              </div>
+            </th>
+            <th pSortableColumn="HexCode" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Hex Code <p-sortIcon field="HexCode" />
+              </div>
+            </th>
+            <th class="py-3.5 px-4 text-center w-28">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-c>
+          <tr class="text-xs border-b border-surface-100 hover:bg-surface-50 transition-colors">
+            <td class="py-3 px-4 w-20">
+              <div class="w-8 h-8 rounded-full border-2 border-surface-300 shadow-2xs" [style.background-color]="c.HexCode"></div>
+            </td>
+            <td class="py-3 px-4 font-bold text-surface-900">{{ c.Name }}</td>
+            <td class="py-3 px-4 font-mono text-surface-600 font-semibold">{{ c.HexCode }}</td>
+            <td class="py-3 px-4 text-center w-28">
+              <div class="flex items-center justify-center gap-1.5">
+                <p-button 
+                  icon="pi pi-pencil" 
+                  [rounded]="true" 
+                  severity="success" 
+                  size="small" 
+                  (onClick)="openEditColor(c)" 
+                  pTooltip="Edit Color" 
+                  tooltipPosition="top"
+                />
+                <p-button 
+                  icon="pi pi-trash" 
+                  [rounded]="true" 
+                  severity="danger" 
+                  size="small" 
+                  (onClick)="deleteColor(c)" 
+                  pTooltip="Delete Color" 
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="4" class="text-center py-8 text-surface-400 text-xs font-semibold">
+              No colors found.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- Order Statuses Tab Content -->
+  @if (activeTab() === 'statuses') {
+    <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+      <p-table 
+        #dtStat
+        [value]="orderStatuses()" 
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} statuses"
+        [globalFilterFields]="['Name', 'Description']"
+        [rowHover]="true"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm p-datatable-hoverable"
+      >
+        <ng-template #caption>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-extrabold text-surface-800 font-display">Order Milestones & Statuses</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold font-mono">
+                {{ orderStatuses().length }} total
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <p-iconfield iconPosition="left" class="w-full sm:w-64">
+                <p-inputicon styleClass="pi pi-search text-xs" />
+                <input 
+                  pInputText 
+                  type="text" 
+                  (input)="dtStat.filterGlobal($any($event.target).value, 'contains')" 
+                  placeholder="Search statuses..." 
+                  class="w-full text-xs p-2 rounded-xl"
+                />
+              </p-iconfield>
+
+              <p-button 
+                label="Add Status" 
+                icon="pi pi-plus" 
+                size="small" 
+                severity="success" 
+                styleClass="whitespace-nowrap shrink-0"
+                (onClick)="openNewStatus()" 
+              />
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template #header>
+          <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+            <th pSortableColumn="Name" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Status Milestone <p-sortIcon field="Name" />
+              </div>
+            </th>
+            <th class="py-3.5 px-4">Lifecycle Description</th>
+            <th class="py-3.5 px-4 text-center w-28">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-st>
+          <tr class="text-xs border-b border-surface-100 hover:bg-surface-50 transition-colors">
+            <td class="py-3 px-4">
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-surface-100 text-surface-800 border border-surface-200">
+                {{ st.Name }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-surface-600">{{ st.Description || '-' }}</td>
+            <td class="py-3 px-4 text-center w-28">
+              <div class="flex items-center justify-center gap-1.5">
+                <p-button 
+                  icon="pi pi-pencil" 
+                  [rounded]="true" 
+                  severity="success" 
+                  size="small" 
+                  (onClick)="openEditStatus(st)" 
+                  pTooltip="Edit Status" 
+                  tooltipPosition="top"
+                />
+                <p-button 
+                  icon="pi pi-trash" 
+                  [rounded]="true" 
+                  severity="danger" 
+                  size="small" 
+                  (onClick)="deleteStatus(st)" 
+                  pTooltip="Delete Status" 
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="3" class="text-center py-8 text-surface-400 text-xs font-semibold">
+              No statuses found.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- Payment Methods Tab Content -->
+  @if (activeTab() === 'payments') {
+    <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+      <p-table 
+        #dtPay
+        [value]="paymentMethods()" 
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} gateways"
+        [globalFilterFields]="['Name', 'Code', 'AccountNumber']"
+        [rowHover]="true"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm p-datatable-hoverable"
+      >
+        <ng-template #caption>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-extrabold text-surface-800 font-display">Payment Gateways & Methods</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold font-mono">
+                {{ paymentMethods().length }} total
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              <p-iconfield iconPosition="left" class="w-full sm:w-64">
+                <p-inputicon styleClass="pi pi-search text-xs" />
+                <input 
+                  pInputText 
+                  type="text" 
+                  (input)="dtPay.filterGlobal($any($event.target).value, 'contains')" 
+                  placeholder="Search payment gateways..." 
+                  class="w-full text-xs p-2 rounded-xl"
+                />
+              </p-iconfield>
+
+              <p-button 
+                label="Add Payment Method" 
+                icon="pi pi-plus" 
+                size="small" 
+                severity="success" 
+                styleClass="whitespace-nowrap shrink-0"
+                (onClick)="openNewPayment()" 
+              />
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template #header>
+          <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+            <th pSortableColumn="Name" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Gateway Name <p-sortIcon field="Name" />
+              </div>
+            </th>
+            <th pSortableColumn="Code" class="py-3.5 px-4">
+              <div class="flex items-center gap-1.5">
+                Code <p-sortIcon field="Code" />
+              </div>
+            </th>
+            <th class="py-3.5 px-4">Account / Number</th>
+            <th class="py-3.5 px-4">Status</th>
+            <th class="py-3.5 px-4 text-center w-36">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-pm>
+          <tr class="text-xs border-b border-surface-100 hover:bg-surface-50 transition-colors">
+            <td class="py-3 px-4 font-bold text-surface-900">{{ pm.Name }}</td>
+            <td class="py-3 px-4 font-mono text-surface-600">{{ pm.Code }}</td>
+            <td class="py-3 px-4 font-mono text-primary-700 font-semibold">{{ pm.AccountNumber || 'N/A' }}</td>
+            <td class="py-3 px-4">
+              <span 
+                class="px-2.5 py-0.5 rounded-full text-[10px] font-bold cursor-pointer transition-colors"
+                [class.bg-emerald-100]="pm.IsActive"
+                [class.text-emerald-700]="pm.IsActive"
+                [class.bg-surface-100]="!pm.IsActive"
+                [class.text-surface-500]="!pm.IsActive"
+                (click)="togglePaymentActive(pm)"
+              >
+                {{ pm.IsActive ? 'Active' : 'Disabled' }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-center w-36">
+              <div class="flex items-center justify-center gap-1.5">
+                <p-button 
+                  [icon]="pm.IsActive ? 'pi pi-eye-slash' : 'pi pi-eye'" 
+                  [severity]="pm.IsActive ? 'secondary' : 'info'" 
+                  size="small" 
+                  [rounded]="true"
+                  (onClick)="togglePaymentActive(pm)" 
+                  [pTooltip]="pm.IsActive ? 'Disable Gateway' : 'Enable Gateway'" 
+                  tooltipPosition="top"
+                />
+                <p-button 
+                  icon="pi pi-pencil" 
+                  [rounded]="true" 
+                  severity="success" 
+                  size="small" 
+                  (onClick)="openEditPayment(pm)" 
+                  pTooltip="Edit Gateway" 
+                  tooltipPosition="top"
+                />
+                <p-button 
+                  icon="pi pi-trash" 
+                  [rounded]="true" 
+                  severity="danger" 
+                  size="small" 
+                  (onClick)="deletePayment(pm)" 
+                  pTooltip="Delete Gateway" 
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5" class="text-center py-8 text-surface-400 text-xs font-semibold">
+              No payment methods found.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+  <!-- Roles Tab Content -->
+  @if (activeTab() === 'roles') {
+    <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+      <p-table 
+        #dtRole
+        [value]="roles()" 
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} roles"
+        [globalFilterFields]="['Name', 'Description']"
+        [rowHover]="true"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm p-datatable-hoverable"
+      >
+        <ng-template #caption>
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-extrabold text-surface-800 font-display">System Roles & Access Levels</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold font-mono">
+                {{ roles().length }} total
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto shrink-0 flex-nowrap">
+              <p-iconfield iconPosition="left" class="w-full sm:w-64">
+                <p-inputicon styleClass="pi pi-search text-xs" />
+                <input 
+                  pInputText 
+                  type="text" 
+                  (input)="dtRole.filterGlobal($any($event.target).value, 'contains')" 
+                  placeholder="Search roles..." 
+                  class="w-full text-xs p-2 rounded-xl"
+                />
+              </p-iconfield>
+
+              <p-button 
+                label="Add Role" 
+                icon="pi pi-plus" 
+                size="small" 
+                severity="success" 
+                styleClass="whitespace-nowrap shrink-0 !whitespace-nowrap"
+                (onClick)="openNewRole()" 
+              />
+            </div>
+          </div>
+        </ng-template>
+
+        <ng-template #header>
+          <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+            <th pSortableColumn="Name" class="py-3.5 px-4 w-52">
+              <div class="flex items-center gap-1.5">
+                Role Name <p-sortIcon field="Name" />
+              </div>
+            </th>
+            <th class="py-3.5 px-4">Role Description & Responsibilities</th>
+            <th class="py-3.5 px-4 w-44">Access Tier</th>
+            <th class="py-3.5 px-4 text-center w-28">Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-role>
+          <tr class="text-xs border-b border-surface-100 hover:bg-surface-50 transition-colors">
+            <td class="py-3 px-4 font-bold text-surface-900">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-surface-100 flex items-center justify-center text-surface-600 border border-surface-200 shadow-2xs shrink-0">
+                  <i [class]="role.Name.toLowerCase().includes('super') ? 'pi pi-star-fill text-purple-600 text-xs' : (role.Name.toLowerCase().includes('admin') ? 'pi pi-shield text-indigo-600 text-xs' : (role.Name.toLowerCase().includes('manager') ? 'pi pi-briefcase text-amber-600 text-xs' : 'pi pi-user text-emerald-600 text-xs'))"></i>
+                </span>
+                <span>{{ role.Name }}</span>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-surface-600">{{ role.Description || '-' }}</td>
+            <td class="py-3 px-4">
+              @if (role.Name === 'SuperAdmin') {
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-800 border border-purple-200">
+                  Full System Control
+                </span>
+              } @else if (role.Name === 'Admin') {
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                  Store Operations
+                </span>
+              } @else if (role.Name === 'Manager') {
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                  Catalog & Orders
+                </span>
+              } @else if (role.Name === 'Customer') {
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-surface-100 text-surface-700 border border-surface-200">
+                  Storefront User
+                </span>
+              } @else {
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Custom Access
+                </span>
+              }
+            </td>
+            <td class="py-3 px-4 text-center w-28">
+              <div class="flex items-center justify-center gap-1.5">
+                <p-button 
+                  icon="pi pi-pencil" 
+                  [rounded]="true" 
+                  severity="success" 
+                  size="small" 
+                  (onClick)="openEditRole(role)" 
+                  pTooltip="Edit Role" 
+                  tooltipPosition="top"
+                />
+                <p-button 
+                  icon="pi pi-trash" 
+                  [rounded]="true" 
+                  severity="danger" 
+                  size="small" 
+                  (onClick)="deleteRole(role)" 
+                  pTooltip="Delete Role" 
+                  tooltipPosition="top"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="4" class="text-center py-8 text-surface-400 text-xs font-semibold">
+              No roles found.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  }
+
+</div>
+
+<!-- Category Dialog -->
+<p-dialog [visible]="categoryDialogVisible()" (visibleChange)="onCategoryDialogVisibleChange($event)" [header]="categoryForm.Id ? 'Edit Category' : 'Add Category'" [modal]="true" [style]="{ width: '480px' }">
+  @if (categoryDialogVisible()) {
+    <div class="flex flex-col gap-4 py-2 text-xs">
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Category Name *</label>
+        <input type="text" pInputText [(ngModel)]="categoryForm.Name" placeholder="e.g. Formal Shirts" class="p-3 text-xs rounded-xl" />
+      </div>
+
+      <!-- Category Photo Upload System with p-fileupload -->
+      <div class="flex flex-col gap-2">
+        <label class="font-bold text-surface-700 flex items-center gap-1.5">
+          <i class="pi pi-image text-primary-600"></i> Category Photo
+        </label>
+
+        @if (categoryImagePreview()) {
+          <div class="flex items-center justify-between p-3 bg-surface-50 rounded-2xl border border-surface-200 mb-1">
+            <div class="flex items-center gap-3 min-w-0">
+              <img [src]="categoryImagePreview()" class="w-12 h-12 object-cover rounded-xl border border-surface-200 shrink-0 shadow-2xs" alt="Preview" />
+              <div class="flex flex-col min-w-0">
+                <span class="font-bold text-xs text-surface-900 truncate">{{ categorySelectedFile()?.name || categoryForm.Name || 'Current Photo' }}</span>
+                <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1"><i class="pi pi-check-circle text-[10px]"></i> Photo selected</span>
+              </div>
+            </div>
+            <p-button icon="pi pi-trash" severity="danger" size="small" [text]="true" (onClick)="removeCategoryImage()" pTooltip="Remove photo" tooltipPosition="top" />
+          </div>
+        }
+
+        <p-fileupload 
+          #catUploader
+          name="categoryPhoto" 
+          [customUpload]="true" 
+          (onSelect)="onCategoryFileSelect($event)" 
+          (onClear)="removeCategoryImage()"
+          [multiple]="false" 
+          accept="image/*" 
+          [maxFileSize]="5000000" 
+          mode="advanced"
+          [showUploadButton]="false"
+          [showCancelButton]="false"
+          chooseLabel="Select Photo"
+          styleClass="text-xs"
+        >
+          <ng-template #empty>
+            <div class="flex flex-col items-center justify-center p-4 text-surface-400 text-xs gap-1.5">
+              <i class="pi pi-cloud-upload text-2xl text-primary-500"></i>
+              <span class="font-semibold text-surface-700">Drag and drop photo here to upload.</span>
+              <span class="text-[10px] text-surface-400">PNG, JPG, or WEBP up to 5MB</span>
+            </div>
+          </ng-template>
+        </p-fileupload>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-surface-200">
+        <p-button label="Cancel" severity="secondary" [outlined]="true" size="small" (onClick)="onCategoryDialogVisibleChange(false)" />
+        <p-button 
+          [label]="isCategoryUploading() ? 'Saving...' : (categoryForm.Id ? 'Update Category' : 'Save Category')" 
+          [loading]="isCategoryUploading()"
+          [disabled]="isCategoryUploading()"
+          icon="pi pi-check" 
+          severity="success" 
+          size="small" 
+          (onClick)="saveCategory()" 
+        />
+      </div>
+    </div>
+  }
+</p-dialog>
+
+<!-- SubCategory Dialog -->
+<p-dialog [visible]="subCategoryDialogVisible()" (visibleChange)="onSubCategoryDialogVisibleChange($event)" [header]="subCategoryForm.Id ? 'Edit SubCategory' : 'Add SubCategory'" [modal]="true" [style]="{ width: '480px' }">
+  @if (subCategoryDialogVisible()) {
+    <div class="flex flex-col gap-4 py-2 text-xs">
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Parent Category *</label>
+        <p-select [options]="categories()" [(ngModel)]="subCategoryForm.CategoryId" optionLabel="Name" optionValue="Id" styleClass="w-full text-xs" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">SubCategory Name *</label>
+        <input type="text" pInputText [(ngModel)]="subCategoryForm.Name" placeholder="e.g. Linen Shirts" class="p-3 text-xs rounded-xl" />
+      </div>
+
+      <!-- SubCategory Photo Upload System with p-fileupload -->
+      <div class="flex flex-col gap-2">
+        <label class="font-bold text-surface-700 flex items-center gap-1.5">
+          <i class="pi pi-image text-primary-600"></i> SubCategory Photo
+        </label>
+
+        @if (subCategoryImagePreview()) {
+          <div class="flex items-center justify-between p-3 bg-surface-50 rounded-2xl border border-surface-200 mb-1">
+            <div class="flex items-center gap-3 min-w-0">
+              <img [src]="subCategoryImagePreview()" class="w-12 h-12 object-cover rounded-xl border border-surface-200 shrink-0 shadow-2xs" alt="Preview" />
+              <div class="flex flex-col min-w-0">
+                <span class="font-bold text-xs text-surface-900 truncate">{{ subCategorySelectedFile()?.name || subCategoryForm.Name || 'Current Photo' }}</span>
+                <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-1"><i class="pi pi-check-circle text-[10px]"></i> Photo selected</span>
+              </div>
+            </div>
+            <p-button icon="pi pi-trash" severity="danger" size="small" [text]="true" (onClick)="removeSubCategoryImage()" pTooltip="Remove photo" tooltipPosition="top" />
+          </div>
+        }
+
+        <p-fileupload 
+          #subCatUploader
+          name="subCategoryPhoto" 
+          [customUpload]="true" 
+          (onSelect)="onSubCategoryFileSelect($event)" 
+          (onClear)="removeSubCategoryImage()"
+          [multiple]="false" 
+          accept="image/*" 
+          [maxFileSize]="5000000" 
+          mode="advanced"
+          [showUploadButton]="false"
+          [showCancelButton]="false"
+          chooseLabel="Select Photo"
+          styleClass="text-xs"
+        >
+          <ng-template #empty>
+            <div class="flex flex-col items-center justify-center p-4 text-surface-400 text-xs gap-1.5">
+              <i class="pi pi-cloud-upload text-2xl text-primary-500"></i>
+              <span class="font-semibold text-surface-700">Drag and drop photo here to upload.</span>
+              <span class="text-[10px] text-surface-400">PNG, JPG, or WEBP up to 5MB</span>
+            </div>
+          </ng-template>
+        </p-fileupload>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-surface-200">
+        <p-button label="Cancel" severity="secondary" [outlined]="true" size="small" (onClick)="onSubCategoryDialogVisibleChange(false)" />
+        <p-button 
+          [label]="isSubCategoryUploading() ? 'Saving...' : (subCategoryForm.Id ? 'Update SubCategory' : 'Save SubCategory')" 
+          [loading]="isSubCategoryUploading()"
+          [disabled]="isSubCategoryUploading()"
+          icon="pi pi-check" 
+          severity="success" 
+          size="small" 
+          (onClick)="saveSubCategory()" 
+        />
+      </div>
+    </div>
+  }
+</p-dialog>
+
+<!-- Size Dialog -->
+<p-dialog [visible]="sizeDialogVisible()" (visibleChange)="sizeDialogVisible.set($event)" [header]="sizeForm.Id ? 'Edit Size' : 'Add Size'" [modal]="true" [style]="{ width: '360px' }">
+  <div class="flex flex-col gap-3 py-2 text-xs">
+    <div class="flex flex-col gap-1">
+      <label class="font-bold">Size Name *</label>
+      <input type="text" pInputText [(ngModel)]="sizeForm.Name" placeholder="e.g. XL or 34" class="p-2.5 text-xs rounded-xl" />
+    </div>
+    <div class="flex justify-end gap-2 pt-2 border-t border-surface-200">
+      <p-button label="Cancel" severity="secondary" [outlined]="true" size="small" (onClick)="sizeDialogVisible.set(false)" />
+      <p-button [label]="sizeForm.Id ? 'Update Size' : 'Save Size'" icon="pi pi-check" severity="success" size="small" (onClick)="saveSize()" />
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Color Dialog with 40+ Predefined Auto-Hex Matching -->
+<p-dialog 
+  [visible]="colorDialogVisible()" 
+  (visibleChange)="colorDialogVisible.set($event)" 
+  [header]="colorForm.Id ? 'Edit Color' : 'Add Color'" 
+  [modal]="true" 
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '420px', maxWidth: '95vw' }"
+>
+  <div class="flex flex-col gap-3 py-1 text-xs">
+    <div class="flex flex-col gap-1">
+      <label class="font-bold text-surface-800">Color Name *</label>
+      <input 
+        type="text" 
+        pInputText 
+        [(ngModel)]="colorForm.Name" 
+        (input)="onColorNameInput(colorForm.Name)"
+        placeholder="e.g. Red, Ash, Navy Blue, Yellow, Olive..." 
+        class="p-2.5 text-xs rounded-xl" 
+      />
+      <span class="text-[10px] text-surface-400">💡 Type any color (e.g. Red, Ash, Blue, Yellow, Olive) to auto-detect hex code.</span>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label class="font-bold text-surface-800">Hex Color Code</label>
+      <div class="flex items-center gap-2">
+        <input 
+          type="color" 
+          [(ngModel)]="colorForm.HexCode"
+          class="w-9 h-9 p-0.5 rounded-lg border border-surface-300 cursor-pointer bg-white"
+          title="Pick color"
+        />
+        <input 
+          type="text" 
+          pInputText 
+          [(ngModel)]="colorForm.HexCode" 
+          placeholder="#EF4444" 
+          class="p-2 text-xs rounded-xl font-mono flex-1 font-bold" 
+        />
+        <div 
+          class="w-9 h-9 rounded-lg border border-surface-300 shadow-2xs shrink-0"
+          [style.background-color]="colorForm.HexCode"
+        ></div>
+      </div>
+    </div>
+
+    <!-- 40+ Predefined Quick Color Chips -->
+    <div class="flex flex-col gap-1.5 pt-1 border-t border-surface-100">
+      <span class="font-extrabold text-[10px] uppercase tracking-wider text-surface-500">Popular Quick Colors</span>
+      <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-surface-50 rounded-xl border border-surface-200">
+        @for (pc of predefinedColors; track pc.name) {
+          <button 
+            type="button"
+            (click)="selectQuickColor(pc)"
+            class="px-2 py-1 rounded-lg text-[10px] font-bold border border-surface-200 bg-white hover:bg-surface-100 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            [class.ring-2]="colorForm.Name.toLowerCase() === pc.name.toLowerCase()"
+            [class.ring-primary-500]="colorForm.Name.toLowerCase() === pc.name.toLowerCase()"
+          >
+            <span class="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" [style.background-color]="pc.hex"></span>
+            <span>{{ pc.name }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2 border-t border-surface-200">
+      <p-button label="Cancel" severity="secondary" [outlined]="true" size="small" (onClick)="colorDialogVisible.set(false)" />
+      <p-button [label]="colorForm.Id ? 'Update Color' : 'Save Color'" icon="pi pi-check" severity="success" size="small" (onClick)="saveColor()" />
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Order Status Dialog -->
+<p-dialog [visible]="statusDialogVisible()" (visibleChange)="statusDialogVisible.set($event)" [header]="statusForm.Id ? 'Edit Order Status' : 'Add Order Status'" [modal]="true" [style]="{ width: '420px' }">
+  <div class="flex flex-col gap-3 py-2 text-xs">
+    <div class="flex flex-col gap-1">
+      <label class="font-bold">Status Name *</label>
+      <input type="text" pInputText [(ngModel)]="statusForm.Name" placeholder="e.g. Processing or Shipped" class="p-2.5 text-xs rounded-xl" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="font-bold">Lifecycle Description</label>
+      <input type="text" pInputText [(ngModel)]="statusForm.Description" placeholder="e.g. Order is being packed in warehouse" class="p-2.5 text-xs rounded-xl" />
+    </div>
+    <div class="flex justify-end gap-2 pt-2 border-t border-surface-200">
+      <p-button label="Cancel" severity="secondary" [outlined]="true" size="small" (onClick)="statusDialogVisible.set(false)" />
+      <p-button [label]="statusForm.Id ? 'Update Status' : 'Save Status'" icon="pi pi-check" severity="success" size="small" (onClick)="saveStatus()" />
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Payment Method Dialog -->
+<p-dialog [visible]="paymentDialogVisible()" (visibleChange)="paymentDialogVisible.set($event)" [header]="paymentForm.Id ? 'Edit Payment Method' : 'Add Payment Method'" [modal]="true" [style]="{ width: '450px' }">
+  <div class="flex flex-col gap-3 py-2 text-xs">
+    <div class="flex flex-col gap-1">
+      <label class="font-bold">Gateway Name *</label>
+      <input type="text" pInputText [(ngModel)]="paymentForm.Name" placeholder="e.g. bKash Merchant" class="p-2.5 text-xs rounded-xl" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="font-bold">Code Identifier *</label>
+      <input type="text" pInputText [(ngModel)]="paymentForm.Code" placeholder="e.g. BKASH" class="p-2.5 text-xs rounded-xl font-mono uppercase" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="font-bold">Account / Merchant Number</label>
+      <input type="text" pInputText [(ngModel)]="paymentForm.AccountNumber" placeholder="e.g. 01700-123456" class="p-2.5 text-xs rounded-xl font-mono" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="font-bold">Checkout Instructions</label>
+      <textarea pTextarea [(ngModel)]="paymentForm.Instructions" rows="2" placeholder="Instructions shown to customer during checkout..." class="p-2.5 text-xs rounded-xl"></textarea>
+    </div>
+    <div class="flex justify-end gap-2 pt-2 border-t border-surface-200">
+      <p-button label="Cancel" severity="secondary" [outlined]="true" size="small" (onClick)="paymentDialogVisible.set(false)" />
+      <p-button [label]="paymentForm.Id ? 'Update Gateway' : 'Save Gateway'" icon="pi pi-check" severity="success" size="small" (onClick)="savePayment()" />
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Role Dialog -->
+<p-dialog [visible]="roleDialogVisible()" (visibleChange)="roleDialogVisible.set($event)" [header]="roleForm.Id ? 'Edit Role' : 'Add Role'" [modal]="true" [style]="{ width: '460px' }">
+  <div class="flex flex-col gap-3 py-2 text-xs">
+    <div class="flex flex-col gap-1">
+      <label class="font-bold text-surface-700">Role Name *</label>
+      <input type="text" pInputText [(ngModel)]="roleForm.Name" placeholder="e.g. Moderator or Store Manager" class="p-2.5 text-xs rounded-xl" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="font-bold text-surface-700">Role Description & Responsibilities</label>
+      <textarea pTextarea [(ngModel)]="roleForm.Description" rows="3" placeholder="Describe the access permissions and role scope..." class="p-2.5 text-xs rounded-xl"></textarea>
+    </div>
+    <div class="flex justify-end gap-2 pt-2 border-t border-surface-200">
+      <p-button label="Cancel" severity="secondary" [outlined]="true" size="small" (onClick)="roleDialogVisible.set(false)" />
+      <p-button [label]="roleForm.Id ? 'Update Role' : 'Save Role'" icon="pi pi-check" severity="success" size="small" (onClick)="saveRole()" />
+    </div>
+  </div>
+</p-dialog>

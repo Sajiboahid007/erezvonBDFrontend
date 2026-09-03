@@ -1,0 +1,49 @@
+:host {
+  display: block;
+}
+
+:host ::ng-deep {
+  .p-datatable {
+    .p-datatable-thead > tr > th {
+      padding: 1.1rem 1.25rem !important;
+      font-size: 0.72rem !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.04em !important;
+      color: #475569 !important;
+      background-color: #f8fafc !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 1rem 1.25rem !important;
+    }
+  }
+
+  .p-button {
+    white-space: nowrap !important;
+  }
+
+  .p-dialog-mask {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.75rem !important;
+  }
+
+  .p-dialog {
+    margin: auto !important;
+    border-radius: 1.25rem !important;
+    overflow: hidden !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+
+    .p-dialog-header {
+      padding: 1rem 1.25rem 0.75rem !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+      font-weight: 800 !important;
+    }
+
+    .p-dialog-content {
+      padding: 1rem 1.25rem !important;
+    }
+  }
+}
