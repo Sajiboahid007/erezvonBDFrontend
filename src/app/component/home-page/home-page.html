@@ -257,42 +257,43 @@
 </section>
 
 <!-- Featured Products Section -->
-<section class="py-16 bg-white border-t border-surface-200">
-  <div class="container flex flex-col gap-8">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
+<section class="py-10 sm:py-16 bg-white border-t border-surface-200">
+  <div class="container flex flex-col gap-6 sm:gap-8">
+    <div class="flex flex-row justify-between items-center sm:items-end gap-2">
       <div>
-        <span class="text-xs font-extrabold uppercase text-primary-600 tracking-wider">Handpicked For You</span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-surface-900 font-display">Featured Products</h2>
+        <span class="text-[10px] sm:text-xs font-extrabold uppercase text-primary-600 tracking-wider">Handpicked For You</span>
+        <h2 class="text-xl sm:text-3xl font-extrabold text-surface-900 font-display">Featured Products</h2>
       </div>
-      <a routerLink="/shop" [queryParams]="{ isFeatured: true }" class="text-xs font-bold text-primary-600 hover:text-primary-800 flex items-center gap-1">
-        See All Featured <i class="pi pi-arrow-right text-[10px]"></i>
+      <a routerLink="/shop" [queryParams]="{ isFeatured: true }" class="text-xs font-bold text-primary-600 hover:text-primary-800 flex items-center gap-1 shrink-0">
+        <span>See All</span> <i class="pi pi-arrow-right text-[10px]"></i>
       </a>
     </div>
 
-    <!-- Product Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <!-- Product Grid: 2 columns on mobile, 2 sm, 3 md, 4 lg -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
       @for (prod of featuredProducts(); track prod.Id) {
-        <div class="product-card flex flex-col justify-between group">
+        <div class="product-card group">
           
           <!-- Image and Badges -->
-          <div class="relative overflow-hidden aspect-[4/5] bg-surface-100">
-            <a [routerLink]="['/product', prod.Id]">
+          <div class="product-card-image-wrap">
+            <a [routerLink]="['/product', prod.Id]" class="block w-full h-full">
               @if (prod.Images?.[0]?.ImageUrl) {
                 <img 
                   [src]="prod.Images?.[0]?.ImageUrl" 
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                   alt="{{ prod.Name }}" 
+                  loading="lazy"
                 />
               } @else {
                 <div class="w-full h-full flex flex-col items-center justify-center bg-surface-100 text-surface-400 gap-1.5">
-                  <i class="pi pi-image text-3xl"></i>
-                  <span class="text-[11px] font-bold">No photo</span>
+                  <i class="pi pi-image text-2xl sm:text-3xl"></i>
+                  <span class="text-[10px] sm:text-[11px] font-bold">No photo</span>
                 </div>
               }
             </a>
 
             <!-- Badges -->
-            <div class="absolute top-3 left-3 flex flex-col gap-1.5">
+            <div class="product-card-badges">
               @if (prod.DiscountPrice && (prod.DiscountPrice || 0) < (prod.RegularPrice || 0)) {
                 <span class="badge-discount">
                   -{{ (((prod.RegularPrice || 0) - (prod.DiscountPrice || 0)) / (prod.RegularPrice || 1) * 100) | number:'1.0-0' }}% OFF
@@ -303,34 +304,38 @@
               }
             </div>
 
-            <!-- Quick Add overlay -->
+            <!-- Quick Add Button -->
             <button 
+              type="button"
               (click)="quickAddToCart(prod, $event)" 
-              class="absolute bottom-3 left-3 right-3 py-2.5 rounded-xl bg-white/95 backdrop-blur-md text-surface-900 font-bold text-xs shadow-lg hover:bg-primary-600 hover:text-white transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 duration-300"
+              class="product-quick-add-btn"
+              title="Add to Cart"
+              aria-label="Add to Cart"
             >
-              <i class="pi pi-shopping-cart"></i> Quick Add
+              <i class="pi pi-shopping-cart"></i>
+              <span class="quick-add-text">Quick Add</span>
             </button>
           </div>
 
           <!-- Content -->
-          <div class="p-4 flex flex-col gap-2">
-            <div class="flex items-center justify-between text-[11px] text-surface-400">
-              <span>{{ prod.Category?.Name || 'Apparel' }}</span>
-              <span>SKU: {{ prod.SKU }}</span>
+          <div class="product-card-body">
+            <div class="flex items-center justify-between text-[10px] sm:text-[11px] text-surface-400">
+              <span class="product-card-category truncate max-w-[65%]">{{ prod.Category?.Name || 'Apparel' }}</span>
+              <span class="hidden sm:inline">SKU: {{ prod.SKU }}</span>
             </div>
 
             <a [routerLink]="['/product', prod.Id]">
-              <h3 class="font-bold text-sm text-surface-900 hover:text-primary-600 transition-colors line-clamp-1">
+              <h3 class="product-card-title">
                 {{ prod.Name }}
               </h3>
             </a>
 
-            <div class="flex items-baseline gap-2 mt-1">
-              <span class="text-base font-extrabold text-primary-700 font-display">
+            <div class="flex items-baseline gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
+              <span class="product-card-price">
                 {{ settingsService.settingsSignal().CurrencySymbol }}{{ prod.DiscountPrice || prod.RegularPrice }}
               </span>
               @if (prod.DiscountPrice) {
-                <span class="text-xs text-surface-400 line-through">
+                <span class="product-card-old-price">
                   {{ settingsService.settingsSignal().CurrencySymbol }}{{ prod.RegularPrice }}
                 </span>
               }
@@ -345,44 +350,44 @@
 
 <!-- Value Propositions Section (Right Above Footer with Up & Down Margins) -->
 <section class="rezvon-value-props">
-  <div class="container grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white border border-surface-200 shadow-sm">
-      <div class="w-12 h-12 rounded-xl bg-primary-100 text-primary-600 flex items-center justify-center shrink-0">
-        <i class="pi pi-truck text-2xl"></i>
+  <div class="container grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6">
+    <div class="flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-surface-200 shadow-xs">
+      <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-primary-100 text-primary-600 flex items-center justify-center shrink-0">
+        <i class="pi pi-truck text-lg sm:text-2xl"></i>
       </div>
       <div>
-        <h4 class="font-bold text-sm text-surface-900">Nationwide Delivery</h4>
-        <p class="text-xs text-surface-500">Fast shipping across all 64 districts</p>
+        <h4 class="font-bold text-xs sm:text-sm text-surface-900">Nationwide Delivery</h4>
+        <p class="text-[10px] sm:text-xs text-surface-500 leading-tight mt-0.5">Across all 64 districts</p>
       </div>
     </div>
 
-    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white border border-surface-200 shadow-sm">
-      <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-        <i class="pi pi-shield text-2xl"></i>
+    <div class="flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-surface-200 shadow-xs">
+      <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+        <i class="pi pi-shield text-lg sm:text-2xl"></i>
       </div>
       <div>
-        <h4 class="font-bold text-sm text-surface-900">100% Genuine</h4>
-        <p class="text-xs text-surface-500">Original quality & materials guaranteed</p>
+        <h4 class="font-bold text-xs sm:text-sm text-surface-900">100% Genuine</h4>
+        <p class="text-[10px] sm:text-xs text-surface-500 leading-tight mt-0.5">Original quality</p>
       </div>
     </div>
 
-    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white border border-surface-200 shadow-sm">
-      <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-        <i class="pi pi-refresh text-2xl"></i>
+    <div class="flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-surface-200 shadow-xs">
+      <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+        <i class="pi pi-refresh text-lg sm:text-2xl"></i>
       </div>
       <div>
-        <h4 class="font-bold text-sm text-surface-900">7 Days Exchange</h4>
-        <p class="text-xs text-surface-500">Hassle-free size or item replacement</p>
+        <h4 class="font-bold text-xs sm:text-sm text-surface-900">7 Days Exchange</h4>
+        <p class="text-[10px] sm:text-xs text-surface-500 leading-tight mt-0.5">Hassle-free replacement</p>
       </div>
     </div>
 
-    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white border border-surface-200 shadow-sm">
-      <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-        <i class="pi pi-wallet text-2xl"></i>
+    <div class="flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-surface-200 shadow-xs">
+      <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+        <i class="pi pi-wallet text-lg sm:text-2xl"></i>
       </div>
       <div>
-        <h4 class="font-bold text-sm text-surface-900">Cash on Delivery</h4>
-        <p class="text-xs text-surface-500">Pay when you receive your order</p>
+        <h4 class="font-bold text-xs sm:text-sm text-surface-900">Cash on Delivery</h4>
+        <p class="text-[10px] sm:text-xs text-surface-500 leading-tight mt-0.5">Pay upon receiving</p>
       </div>
     </div>
   </div>

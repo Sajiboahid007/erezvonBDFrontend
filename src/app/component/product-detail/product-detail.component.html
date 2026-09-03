@@ -293,27 +293,31 @@
             </a>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
             @for (sp of suggestedProducts(); track sp.Id) {
               <div 
                 [routerLink]="['/product', sp.Id]"
-                class="group bg-white rounded-2xl border border-surface-200 overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                class="product-card group cursor-pointer"
               >
                 <!-- Thumbnail -->
-                <div class="relative aspect-square overflow-hidden bg-surface-100 flex items-center justify-center">
+                <div class="product-card-image-wrap">
                   @if (sp.Images?.[0]?.ImageUrl) {
                     <img 
                       [src]="sp.Images?.[0]?.ImageUrl" 
                       [alt]="sp.Name"
                       class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
                     />
                   } @else {
-                    <i class="pi pi-image text-3xl text-surface-300"></i>
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-surface-100 text-surface-400 gap-1.5">
+                      <i class="pi pi-image text-2xl sm:text-3xl text-surface-300"></i>
+                      <span class="text-[10px] sm:text-[11px] font-bold">No photo</span>
+                    </div>
                   }
 
                   @if (sp.DiscountPrice && (sp.DiscountPrice || 0) < (sp.RegularPrice || 0)) {
-                    <div class="absolute top-2 left-2">
-                      <span class="badge-discount text-[10px] py-0.5 px-1.5 font-bold shadow-2xs">
+                    <div class="product-card-badges">
+                      <span class="badge-discount">
                         -{{ (((sp.RegularPrice || 0) - (sp.DiscountPrice || 0)) / (sp.RegularPrice || 1) * 100) | number:'1.0-0' }}% OFF
                       </span>
                     </div>
@@ -321,19 +325,19 @@
                 </div>
 
                 <!-- Info -->
-                <div class="p-3.5 flex flex-col gap-1.5">
-                  <span class="text-[10px] font-bold text-primary-600 uppercase tracking-wider">
+                <div class="product-card-body">
+                  <span class="product-card-category truncate">
                     {{ sp.Category?.Name || sp.Brand || 'REZVON' }}
                   </span>
-                  <h3 class="text-xs font-bold text-surface-900 group-hover:text-primary-600 transition-colors line-clamp-1">
+                  <h3 class="product-card-title">
                     {{ sp.Name }}
                   </h3>
-                  <div class="flex items-baseline gap-2 pt-0.5">
-                    <span class="text-sm font-extrabold text-primary-700">
+                  <div class="flex items-baseline gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
+                    <span class="product-card-price">
                       {{ settingsService.settingsSignal().CurrencySymbol }}{{ sp.DiscountPrice || sp.RegularPrice }}
                     </span>
                     @if (sp.DiscountPrice) {
-                      <span class="text-xs text-surface-400 line-through">
+                      <span class="product-card-old-price">
                         {{ settingsService.settingsSignal().CurrencySymbol }}{{ sp.RegularPrice }}
                       </span>
                     }

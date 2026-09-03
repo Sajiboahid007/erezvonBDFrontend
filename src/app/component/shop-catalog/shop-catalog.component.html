@@ -160,39 +160,43 @@
       <div class="lg:col-span-9 flex flex-col gap-6">
         
         @if (loading()) {
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
             @for (i of [1,2,3,4,5,6]; track i) {
-              <div class="h-80 bg-white rounded-2xl border border-surface-200 animate-pulse p-4 flex flex-col justify-between">
-                <div class="w-full h-48 bg-surface-200 rounded-xl"></div>
-                <div class="h-4 bg-surface-200 rounded w-3/4 mt-3"></div>
-                <div class="h-4 bg-surface-200 rounded w-1/2"></div>
+              <div class="product-card animate-pulse flex flex-col justify-between">
+                <div class="product-card-image-wrap bg-surface-200"></div>
+                <div class="product-card-body">
+                  <div class="h-3 bg-surface-200 rounded w-1/3 mb-1"></div>
+                  <div class="h-4 bg-surface-200 rounded w-3/4 mb-1"></div>
+                  <div class="h-4 bg-surface-200 rounded w-1/2 mt-1"></div>
+                </div>
               </div>
             }
           </div>
         } @else if (products().length > 0) {
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
             @for (prod of products(); track prod.Id) {
-              <div class="product-card flex flex-col justify-between group">
+              <div class="product-card group">
                 
                 <!-- Product Image -->
-                <div class="relative overflow-hidden aspect-[4/5] bg-surface-100">
-                  <a [routerLink]="['/product', prod.Id]">
+                <div class="product-card-image-wrap">
+                  <a [routerLink]="['/product', prod.Id]" class="block w-full h-full">
                     @if (prod.Images?.[0]?.ImageUrl) {
                       <img 
                         [src]="prod.Images?.[0]?.ImageUrl" 
                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                         alt="{{ prod.Name }}" 
+                        loading="lazy"
                       />
                     } @else {
                       <div class="w-full h-full flex flex-col items-center justify-center bg-surface-100 text-surface-400 gap-1.5">
-                        <i class="pi pi-image text-3xl"></i>
-                        <span class="text-[11px] font-bold">No photo</span>
+                        <i class="pi pi-image text-2xl sm:text-3xl"></i>
+                        <span class="text-[10px] sm:text-[11px] font-bold">No photo</span>
                       </div>
                     }
                   </a>
 
                   <!-- Badges -->
-                  <div class="absolute top-3 left-3 flex flex-col gap-1.5">
+                  <div class="product-card-badges">
                     @if (prod.DiscountPrice && (prod.DiscountPrice || 0) < (prod.RegularPrice || 0)) {
                       <span class="badge-discount">
                         -{{ (((prod.RegularPrice || 0) - (prod.DiscountPrice || 0)) / (prod.RegularPrice || 1) * 100) | number:'1.0-0' }}% OFF
@@ -205,32 +209,36 @@
 
                   <!-- Quick Add Button -->
                   <button 
+                    type="button"
                     (click)="quickAddToCart(prod, $event)" 
-                    class="absolute bottom-3 left-3 right-3 py-2.5 rounded-xl bg-white/95 backdrop-blur-md text-surface-900 font-bold text-xs shadow-lg hover:bg-primary-600 hover:text-white transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 duration-300"
+                    class="product-quick-add-btn"
+                    title="Add to Cart"
+                    aria-label="Add to Cart"
                   >
-                    <i class="pi pi-shopping-cart"></i> Quick Add
+                    <i class="pi pi-shopping-cart"></i>
+                    <span class="quick-add-text">Quick Add</span>
                   </button>
                 </div>
 
                 <!-- Product Details -->
-                <div class="p-4 flex flex-col gap-2">
-                  <div class="flex items-center justify-between text-[11px] text-surface-400">
-                    <span>{{ prod.Category?.Name || 'Apparel' }}</span>
-                    <span>SKU: {{ prod.SKU }}</span>
+                <div class="product-card-body">
+                  <div class="flex items-center justify-between text-[10px] sm:text-[11px] text-surface-400">
+                    <span class="product-card-category truncate max-w-[65%]">{{ prod.Category?.Name || 'Apparel' }}</span>
+                    <span class="hidden sm:inline">SKU: {{ prod.SKU }}</span>
                   </div>
 
                   <a [routerLink]="['/product', prod.Id]">
-                    <h3 class="font-bold text-sm text-surface-900 hover:text-primary-600 transition-colors line-clamp-1">
+                    <h3 class="product-card-title">
                       {{ prod.Name }}
                     </h3>
                   </a>
 
-                  <div class="flex items-baseline gap-2 mt-1">
-                    <span class="text-base font-extrabold text-primary-700 font-display">
+                  <div class="flex items-baseline gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
+                    <span class="product-card-price">
                       {{ settingsService.settingsSignal().CurrencySymbol }}{{ prod.DiscountPrice || prod.RegularPrice }}
                     </span>
                     @if (prod.DiscountPrice) {
-                      <span class="text-xs text-surface-400 line-through">
+                      <span class="product-card-old-price">
                         {{ settingsService.settingsSignal().CurrencySymbol }}{{ prod.RegularPrice }}
                       </span>
                     }
