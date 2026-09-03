@@ -553,7 +553,7 @@ export class AdminProductsComponent implements OnInit {
       if (photo.file) {
         try {
           const uploadRes = await firstValueFrom(this.productService.uploadImage(photo.file));
-          const url = uploadRes?.url || uploadRes?.filename || uploadRes?.fullUrl || '';
+          const url = uploadRes?.url || uploadRes?.fullUrl || '';
           if (url) {
             resolvedPhotos.push({ url, isPrimary: photo.isPrimary });
           }

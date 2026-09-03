@@ -1,34 +1,34 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, from, map, catchError, of } from 'rxjs';
 import { Category, SubCategory } from '../models';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CategoryService {
-  private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private supabase = inject(SupabaseService);
 
   formatImageUrl(url?: string): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-      return url;
-    }
-    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    if (cleanUrl.startsWith('/uploads/')) {
-      return `http://localhost:3000${cleanUrl}`;
-    }
-    return `http://localhost:3000/uploads/${url}`;
+    return url;
   }
 
   // Categories
   getCategories(): Observable<Category[]> {
-    return this.http.get<any>(`${this.apiUrl}/category/get`).pipe(
-      map((res) => {
-        const raw = res?.data || res || [];
-        const items = Array.isArray(raw) ? raw : [];
-        return items.map((c: any) => ({
+    return from(
+      this.supabase.client
+        .from('Category')
+        .select('*')
+        .eq('IsMarkToDelete', false)
+        .order('Id', { ascending: true })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching categories from Supabase:', error);
+          return [];
+        }
+        return (data || []).map((c: any) => ({
           ...c,
           ImageUrl: c.ImageUrl ? this.formatImageUrl(c.ImageUrl) : undefined,
         }));
@@ -38,41 +38,104 @@ export class CategoryService {
   }
 
   getCategoryById(id: number): Observable<Category> {
-    return this.http.get<any>(`${this.apiUrl}/category/get/${id}`).pipe(
-      map((res) => {
-        const c = res?.data || res;
+    return from(
+      this.supabase.client
+        .from('Category')
+        .select('*')
+        .eq('Id', id)
+        .eq('IsMarkToDelete', false)
+        .single()
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) throw error;
         return {
-          ...c,
-          ImageUrl: c?.ImageUrl ? this.formatImageUrl(c.ImageUrl) : undefined,
+          ...data,
+          ImageUrl: data?.ImageUrl ? this.formatImageUrl(data.ImageUrl) : undefined,
         };
       })
     );
   }
 
   createCategory(data: Partial<Category>): Observable<Category> {
-    return this.http.post<any>(`${this.apiUrl}/category/create`, data).pipe(
-      map((res) => res?.data || res)
+    const payload = {
+      Name: data.Name,
+      Description: data.Description || null,
+      ImageUrl: data.ImageUrl || null,
+      IsMarkToDelete: false,
+      CreatedBy: 'Admin',
+    };
+
+    return from(
+      this.supabase.client
+        .from('Category')
+        .insert(payload)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: created, error }) => {
+        if (error) throw error;
+        return created;
+      })
     );
   }
 
   updateCategory(id: number, data: Partial<Category>): Observable<Category> {
-    return this.http.put<any>(`${this.apiUrl}/category/update/${id}`, data).pipe(
-      map((res) => res?.data || res)
+    const payload = {
+      ...(data.Name !== undefined ? { Name: data.Name } : {}),
+      ...(data.Description !== undefined ? { Description: data.Description } : {}),
+      ...(data.ImageUrl !== undefined ? { ImageUrl: data.ImageUrl } : {}),
+      UpdatedDate: new Date().toISOString(),
+      UpdatedBy: 'Admin',
+    };
+
+    return from(
+      this.supabase.client
+        .from('Category')
+        .update(payload)
+        .eq('Id', id)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: updated, error }) => {
+        if (error) throw error;
+        return updated;
+      })
     );
   }
 
   deleteCategory(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/category/delete/${id}`);
+    return from(
+      this.supabase.client
+        .from('Category')
+        .update({ IsMarkToDelete: true, UpdatedDate: new Date().toISOString() })
+        .eq('Id', id)
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw error;
+        return { message: 'Category deleted successfully' };
+      })
+    );
   }
 
   // SubCategories
   getSubCategories(categoryId?: number): Observable<SubCategory[]> {
-    const options = categoryId ? { params: { categoryId: categoryId.toString() } } : {};
-    return this.http.get<any>(`${this.apiUrl}/subcategory/get`, options).pipe(
-      map((res) => {
-        const raw = res?.data || res || [];
-        const items = Array.isArray(raw) ? raw : [];
-        return items.map((s: any) => ({
+    let query = this.supabase.client
+      .from('SubCategory')
+      .select('*')
+      .eq('IsMarkToDelete', false)
+      .order('Id', { ascending: true });
+
+    if (categoryId) {
+      query = query.eq('CategoryId', categoryId);
+    }
+
+    return from(query).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching subcategories from Supabase:', error);
+          return [];
+        }
+        return (data || []).map((s: any) => ({
           ...s,
           ImageUrl: s.ImageUrl ? this.formatImageUrl(s.ImageUrl) : undefined,
         }));
@@ -82,18 +145,65 @@ export class CategoryService {
   }
 
   createSubCategory(data: Partial<SubCategory>): Observable<SubCategory> {
-    return this.http.post<any>(`${this.apiUrl}/subcategory/create`, data).pipe(
-      map((res) => res?.data || res)
+    const payload = {
+      CategoryId: data.CategoryId,
+      Name: data.Name,
+      Description: data.Description || null,
+      ImageUrl: data.ImageUrl || null,
+      IsMarkToDelete: false,
+      CreatedBy: 'Admin',
+    };
+
+    return from(
+      this.supabase.client
+        .from('SubCategory')
+        .insert(payload)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: created, error }) => {
+        if (error) throw error;
+        return created;
+      })
     );
   }
 
   updateSubCategory(id: number, data: Partial<SubCategory>): Observable<SubCategory> {
-    return this.http.put<any>(`${this.apiUrl}/subcategory/update/${id}`, data).pipe(
-      map((res) => res?.data || res)
+    const payload = {
+      ...(data.CategoryId !== undefined ? { CategoryId: data.CategoryId } : {}),
+      ...(data.Name !== undefined ? { Name: data.Name } : {}),
+      ...(data.Description !== undefined ? { Description: data.Description } : {}),
+      ...(data.ImageUrl !== undefined ? { ImageUrl: data.ImageUrl } : {}),
+      UpdatedDate: new Date().toISOString(),
+      UpdatedBy: 'Admin',
+    };
+
+    return from(
+      this.supabase.client
+        .from('SubCategory')
+        .update(payload)
+        .eq('Id', id)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: updated, error }) => {
+        if (error) throw error;
+        return updated;
+      })
     );
   }
 
   deleteSubCategory(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/subcategory/delete/${id}`);
+    return from(
+      this.supabase.client
+        .from('SubCategory')
+        .update({ IsMarkToDelete: true, UpdatedDate: new Date().toISOString() })
+        .eq('Id', id)
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw error;
+        return { message: 'SubCategory deleted successfully' };
+      })
+    );
   }
 }

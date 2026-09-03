@@ -1,15 +1,14 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, from, map, catchError, of } from 'rxjs';
 import { Color, Size } from '../models';
 import { findMatchingHexCode } from '../utils/color-palette';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AttributeService {
-  private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private supabase = inject(SupabaseService);
 
   private getCachedHexMap(): Record<string, string> {
     try {
@@ -30,35 +29,95 @@ export class AttributeService {
 
   // Sizes
   getSizes(): Observable<Size[]> {
-    return this.http.get<any>(`${this.apiUrl}/size/get`).pipe(
-      map((res) => res?.data || (Array.isArray(res) ? res : [])),
+    return from(
+      this.supabase.client
+        .from('Sizes')
+        .select('*')
+        .eq('IsMarkToDelete', false)
+        .order('Id', { ascending: true })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching sizes from Supabase:', error);
+          return [];
+        }
+        return data || [];
+      }),
       catchError(() => of([]))
     );
   }
 
   createSize(data: Partial<Size>): Observable<Size> {
-    return this.http.post<any>(`${this.apiUrl}/size/create`, data).pipe(
-      map((res) => res?.data || res)
+    const payload = {
+      Name: data.Name,
+      IsMarkToDelete: false,
+      CreatedBy: 'Admin',
+    };
+
+    return from(
+      this.supabase.client
+        .from('Sizes')
+        .insert(payload)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: created, error }) => {
+        if (error) throw error;
+        return created;
+      })
     );
   }
 
   updateSize(id: number, data: Partial<Size>): Observable<Size> {
-    return this.http.put<any>(`${this.apiUrl}/size/update/${id}`, data).pipe(
-      map((res) => res?.data || res)
+    return from(
+      this.supabase.client
+        .from('Sizes')
+        .update({
+          Name: data.Name,
+          UpdatedDate: new Date().toISOString(),
+          UpdatedBy: 'Admin',
+        })
+        .eq('Id', id)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: updated, error }) => {
+        if (error) throw error;
+        return updated;
+      })
     );
   }
 
   deleteSize(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/size/delete/${id}`);
+    return from(
+      this.supabase.client
+        .from('Sizes')
+        .update({ IsMarkToDelete: true, UpdatedDate: new Date().toISOString() })
+        .eq('Id', id)
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw error;
+        return { message: 'Size deleted successfully' };
+      })
+    );
   }
 
   // Colors
   getColors(): Observable<Color[]> {
-    return this.http.get<any>(`${this.apiUrl}/color/get`).pipe(
-      map((res) => {
-        const list = res?.data || (Array.isArray(res) ? res : []);
+    return from(
+      this.supabase.client
+        .from('Colors')
+        .select('*')
+        .eq('IsMarkToDelete', false)
+        .order('Id', { ascending: true })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching colors from Supabase:', error);
+          return [];
+        }
         const cache = this.getCachedHexMap();
-        return list.map((c: any) => {
+        return (data || []).map((c: any) => {
           const lowerName = (c.Name || '').trim().toLowerCase();
           const hex = c.HexCode || cache[lowerName] || findMatchingHexCode(c.Name) || '#3B82F6';
           return {
@@ -75,11 +134,24 @@ export class AttributeService {
     if (data.Name && data.HexCode) {
       this.setCachedHex(data.Name, data.HexCode);
     }
-    return this.http.post<any>(`${this.apiUrl}/color/create`, data).pipe(
-      map((res) => {
-        const item = res?.data || res;
-        const hex = data.HexCode || findMatchingHexCode(item?.Name) || '#3B82F6';
-        return { ...item, HexCode: hex };
+
+    const payload = {
+      Name: data.Name,
+      IsMarkToDelete: false,
+      CreatedBy: 'Admin',
+    };
+
+    return from(
+      this.supabase.client
+        .from('Colors')
+        .insert(payload)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: created, error }) => {
+        if (error) throw error;
+        const hex = data.HexCode || findMatchingHexCode(created?.Name) || '#3B82F6';
+        return { ...created, HexCode: hex };
       })
     );
   }
@@ -88,16 +160,38 @@ export class AttributeService {
     if (data.Name && data.HexCode) {
       this.setCachedHex(data.Name, data.HexCode);
     }
-    return this.http.put<any>(`${this.apiUrl}/color/update/${id}`, data).pipe(
-      map((res) => {
-        const item = res?.data || res;
-        const hex = data.HexCode || findMatchingHexCode(item?.Name) || '#3B82F6';
-        return { ...item, HexCode: hex };
+
+    return from(
+      this.supabase.client
+        .from('Colors')
+        .update({
+          Name: data.Name,
+          UpdatedDate: new Date().toISOString(),
+          UpdatedBy: 'Admin',
+        })
+        .eq('Id', id)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: updated, error }) => {
+        if (error) throw error;
+        const hex = data.HexCode || findMatchingHexCode(updated?.Name) || '#3B82F6';
+        return { ...updated, HexCode: hex };
       })
     );
   }
 
   deleteColor(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/color/delete/${id}`);
+    return from(
+      this.supabase.client
+        .from('Colors')
+        .update({ IsMarkToDelete: true, UpdatedDate: new Date().toISOString() })
+        .eq('Id', id)
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw error;
+        return { message: 'Color deleted successfully' };
+      })
+    );
   }
 }

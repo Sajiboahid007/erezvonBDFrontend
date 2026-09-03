@@ -1,6 +1,5 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, from, map, catchError, of, switchMap } from 'rxjs';
 import {
   PaginatedResponse,
   Product,
@@ -8,57 +7,82 @@ import {
   ProductImage,
   ProductVariant,
 } from '../models';
+import { SupabaseService } from './supabase.service';
+import { CloudinaryService } from './cloudinary.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProductService {
-  private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private supabase = inject(SupabaseService);
+  private cloudinary = inject(CloudinaryService);
 
   formatImageUrl(url?: string): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-      return url;
-    }
-    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    if (cleanUrl.startsWith('/uploads/')) {
-      return `http://localhost:3000${cleanUrl}`;
-    }
-    return `http://localhost:3000/uploads/${url}`;
+    return url;
   }
 
+  // Direct browser-to-Cloudinary image upload
   uploadImage(file: File): Observable<{ filename: string; url: string; fullUrl: string }> {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<any>(`${this.apiUrl}/upload`, formData, {
-      headers: { 'X-Skip-Error-Toast': 'true' }
-    }).pipe(
-      map((res) => res?.data || res)
-    );
+    return this.cloudinary.uploadImage(file);
   }
 
   getProducts(filters?: ProductFilterParams): Observable<PaginatedResponse<Product>> {
-    let params = new HttpParams();
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        const val = (filters as any)[key];
-        if (val !== undefined && val !== null && val !== '') {
-          params = params.set(key, val.toString());
-        }
-      });
+    const page = Number(filters?.page) || 1;
+    const limit = Number(filters?.limit) || 12;
+    const fromIndex = (page - 1) * limit;
+    const toIndex = fromIndex + limit - 1;
+
+    let query = this.supabase.client
+      .from('Products')
+      .select(
+        '*, Category(*), SubCategory(*), ProductImages(*), ProductVariants(*, Sizes(*), Colors(*))',
+        { count: 'exact' }
+      )
+      .eq('IsMarkToDelete', false);
+
+    if (filters?.categoryId) {
+      query = query.eq('CategoryId', Number(filters.categoryId));
     }
-    return this.http.get<any>(`${this.apiUrl}/product/get`, { params }).pipe(
-      map((res) => {
-        const raw = res?.data || res;
-        const items = raw?.items || (Array.isArray(raw) ? raw : []);
-        const formattedItems = items.map((p: any) => this.formatProduct(p));
+    if (filters?.subCategoryId) {
+      query = query.eq('SubCategoryId', Number(filters.subCategoryId));
+    }
+    if (filters?.minPrice !== undefined && filters?.minPrice !== null && !isNaN(Number(filters.minPrice))) {
+      query = query.gte('Price', Number(filters.minPrice));
+    }
+    if (filters?.maxPrice !== undefined && filters?.maxPrice !== null && !isNaN(Number(filters.maxPrice))) {
+      query = query.lte('Price', Number(filters.maxPrice));
+    }
+    if (filters?.search) {
+      query = query.ilike('Name', `%${filters.search.trim()}%`);
+    }
+
+    if (filters?.sort === 'price_asc') {
+      query = query.order('Price', { ascending: true });
+    } else if (filters?.sort === 'price_desc') {
+      query = query.order('Price', { ascending: false });
+    } else {
+      query = query.order('Id', { ascending: false });
+    }
+
+    query = query.range(fromIndex, toIndex);
+
+    return from(query).pipe(
+      map(({ data, count, error }) => {
+        if (error) {
+          console.error('Error fetching products from Supabase:', error);
+          return { data: [], total: 0, page, limit, totalPages: 1 };
+        }
+        const total = count || (data || []).length;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const formatted = (data || []).map((p: any) => this.formatProduct(p));
+
         return {
-          data: formattedItems,
-          total: raw?.pagination?.total || formattedItems.length,
-          page: raw?.pagination?.page || 1,
-          limit: raw?.pagination?.limit || 12,
-          totalPages: raw?.pagination?.totalPages || 1,
+          data: formatted,
+          total,
+          page,
+          limit,
+          totalPages,
         };
       }),
       catchError(() => of({ data: [], total: 0, page: 1, limit: 12, totalPages: 1 }))
@@ -66,30 +90,50 @@ export class ProductService {
   }
 
   getProductById(id: number): Observable<Product> {
-    return this.http.get<any>(`${this.apiUrl}/product/get/${id}`).pipe(
-      map((res) => this.formatProduct(res?.data || res))
+    return from(
+      this.supabase.client
+        .from('Products')
+        .select('*, Category(*), SubCategory(*), ProductImages(*), ProductVariants(*, Sizes(*), Colors(*))')
+        .eq('Id', id)
+        .eq('IsMarkToDelete', false)
+        .single()
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) throw error;
+        return this.formatProduct(data);
+      })
     );
   }
 
   searchProducts(query: string): Observable<Product[]> {
-    return this.http.get<any>(`${this.apiUrl}/product/search`, {
-      params: { q: query },
-    }).pipe(
-      map((res) => {
-        const items = res?.data || (Array.isArray(res) ? res : []);
-        return items.map((p: any) => this.formatProduct(p));
+    return from(
+      this.supabase.client
+        .from('Products')
+        .select('*, Category(*), SubCategory(*), ProductImages(*), ProductVariants(*, Sizes(*), Colors(*))')
+        .eq('IsMarkToDelete', false)
+        .ilike('Name', `%${query.trim()}%`)
+        .limit(10)
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) return [];
+        return (data || []).map((p: any) => this.formatProduct(p));
       }),
       catchError(() => of([]))
     );
   }
 
   getFeaturedProducts(limit: number = 8): Observable<Product[]> {
-    return this.http.get<any>(`${this.apiUrl}/product/featured`, {
-      params: { limit: limit.toString() },
-    }).pipe(
-      map((res) => {
-        const items = res?.data || (Array.isArray(res) ? res : []);
-        return items.map((p: any) => this.formatProduct(p));
+    return from(
+      this.supabase.client
+        .from('Products')
+        .select('*, Category(*), SubCategory(*), ProductImages(*), ProductVariants(*, Sizes(*), Colors(*))')
+        .eq('IsMarkToDelete', false)
+        .order('Id', { ascending: false })
+        .limit(limit)
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) return [];
+        return (data || []).map((p: any) => this.formatProduct(p));
       }),
       catchError(() => of([]))
     );
@@ -97,75 +141,60 @@ export class ProductService {
 
   formatProduct(p: any): Product {
     if (!p) return p;
-    const variants: ProductVariant[] = (p.ProductVariants || p.Variants || p.variants || p.productVariants || []).map((v: any) => {
-      const sizeObj = v.Sizes || v.Size || (v.size ? { Id: v.SizeId || 0, Name: v.size } : undefined);
-      const colorObj = v.Colors || v.Color || (v.color ? { Id: v.ColorId || 0, Name: v.color, HexCode: '#333' } : null);
-      const stock =
-        v.StockQuantity !== undefined && v.StockQuantity !== null
-          ? Number(v.StockQuantity)
-          : v.stockQuantity !== undefined && v.stockQuantity !== null
-          ? Number(v.stockQuantity)
-          : v.Stock !== undefined && v.Stock !== null
-          ? Number(v.Stock)
-          : v.stock !== undefined && v.stock !== null
-          ? Number(v.stock)
-          : v.Quantity !== undefined && v.Quantity !== null
-          ? Number(v.Quantity)
-          : v.quantity !== undefined && v.quantity !== null
-          ? Number(v.quantity)
-          : 0;
+    const variants: ProductVariant[] = (p.ProductVariants || p.Variants || []).map((v: any) => {
+      const sizeObj = v.Sizes || (v.Size ? { Id: v.SizeId, Name: v.Size } : undefined);
+      const colorObj = v.Colors || (v.Color ? { Id: v.ColorId, Name: v.Color, HexCode: '#333' } : null);
+      const stock = Number(v.StockQuantity ?? v.stockQuantity ?? 0);
 
       return {
         ...v,
-        Id: v.Id ?? v.id,
-        ProductId: v.ProductId ?? v.productId ?? p.Id ?? p.id,
-        SizeId: v.SizeId ?? v.sizeId,
-        ColorId: v.ColorId !== undefined ? v.ColorId : (v.colorId !== undefined ? v.colorId : null),
+        Id: v.Id,
+        ProductId: v.ProductId || p.Id,
+        SizeId: v.SizeId,
+        ColorId: v.ColorId ?? null,
         StockQuantity: stock,
         Sizes: sizeObj,
         Size: sizeObj,
         Colors: colorObj,
         Color: colorObj,
-        SKU: v.SKU || v.sku || '',
-        AdditionalPrice: Number(v.AdditionalPrice || v.additionalPrice || 0),
+        SKU: v.SKU || '',
+        AdditionalPrice: 0,
       };
     });
 
     const totalStock =
       variants.length > 0
         ? variants.reduce((sum: number, v: any) => sum + (v.StockQuantity || 0), 0)
-        : p.totalStock !== undefined && p.totalStock !== null
-        ? Number(p.totalStock)
-        : p.TotalStock !== undefined && p.TotalStock !== null
-        ? Number(p.TotalStock)
-        : p.StockQuantity !== undefined && p.StockQuantity !== null
-        ? Number(p.StockQuantity)
-        : p.stockQuantity !== undefined && p.stockQuantity !== null
-        ? Number(p.stockQuantity)
-        : p.Stock !== undefined && p.Stock !== null
-        ? Number(p.Stock)
-        : p.stock !== undefined && p.stock !== null
-        ? Number(p.stock)
-        : 0;
+        : Number(p.StockQuantity || 0);
 
-    const formattedImages: ProductImage[] = (p.ProductImages || p.Images || p.images || p.productImages || []).map((img: any) => ({
-      ...img,
-      Id: img.Id ?? img.id,
-      ProductId: img.ProductId ?? img.productId ?? p.Id ?? p.id,
-      ImageUrl: this.formatImageUrl(img.ImageUrl || img.imageUrl || img.url),
-      IsPrimary: Boolean(img.IsPrimary ?? img.isPrimary),
-    }));
+    const rawImages = (p.ProductImages || p.Images || []).filter((img: any) => !img.IsMarkToDelete);
+    const seenUrls = new Set<string>();
+    const formattedImages: ProductImage[] = [];
 
-    const price = p.Price !== undefined ? Number(p.Price) : (p.RegularPrice !== undefined ? Number(p.RegularPrice) : 0);
+    for (const img of rawImages) {
+      const url = this.formatImageUrl(typeof img === 'string' ? img : img.ImageUrl);
+      if (url && !seenUrls.has(url)) {
+        seenUrls.add(url);
+        formattedImages.push({
+          ...img,
+          Id: img.Id || 0,
+          ProductId: img.ProductId || p.Id,
+          ImageUrl: url,
+          IsPrimary: Boolean(img.IsPrimary),
+        });
+      }
+    }
+
+    const price = Number(p.Price || 0);
     const discountPrice = p.DiscountPrice !== null && p.DiscountPrice !== undefined ? Number(p.DiscountPrice) : undefined;
 
     return {
       ...p,
-      Id: p.Id ?? p.id,
+      Id: p.Id,
       Price: price,
       RegularPrice: price,
       DiscountPrice: discountPrice,
-      totalStock: totalStock,
+      totalStock,
       TotalStock: totalStock,
       ProductImages: formattedImages,
       Images: formattedImages,
@@ -177,42 +206,112 @@ export class ProductService {
   // Admin Product Operations
   createProduct(data: Partial<Product>): Observable<Product> {
     const payload = {
-      ...data,
-      Price: data.RegularPrice,
+      Name: data.Name,
+      Description: data.Description || null,
+      CategoryId: data.CategoryId,
+      SubCategoryId: data.SubCategoryId,
+      Brand: data.Brand || null,
+      Fabric: data.Fabric || null,
+      Price: data.RegularPrice || data.Price || 0,
+      DiscountPrice: data.DiscountPrice || null,
+      SKU: data.SKU || `SKU-${Date.now()}`,
+      IsMarkToDelete: false,
+      CreatedBy: 'Admin',
     };
-    return this.http.post<any>(`${this.apiUrl}/product/create`, payload).pipe(
-      map((res) => this.formatProduct(res?.data || res))
+
+    return from(
+      this.supabase.client
+        .from('Products')
+        .insert(payload)
+        .select()
+        .single()
+    ).pipe(
+      switchMap(({ data: createdProd, error }) => {
+        if (error) throw error;
+
+        // If initial images exist, insert them
+        const images = (data as any).Images || (data as any).ProductImages || [];
+        if (Array.isArray(images) && images.length > 0) {
+          const imgRows = images.map((img: any, idx: number) => ({
+            ProductId: createdProd.Id,
+            ImageUrl: typeof img === 'string' ? img : img.ImageUrl,
+            IsPrimary: idx === 0,
+            IsMarkToDelete: false,
+            CreatedBy: 'Admin',
+          }));
+          return from(this.supabase.client.from('ProductImages').insert(imgRows)).pipe(
+            map(() => this.formatProduct(createdProd))
+          );
+        }
+
+        return of(this.formatProduct(createdProd));
+      })
     );
   }
 
   updateProduct(id: number, data: Partial<Product>): Observable<Product> {
-    const payload = {
-      ...data,
-      Price: data.RegularPrice,
+    const payload: any = {
+      ...(data.Name !== undefined ? { Name: data.Name } : {}),
+      ...(data.Description !== undefined ? { Description: data.Description } : {}),
+      ...(data.CategoryId !== undefined ? { CategoryId: data.CategoryId } : {}),
+      ...(data.SubCategoryId !== undefined ? { SubCategoryId: data.SubCategoryId } : {}),
+      ...(data.Brand !== undefined ? { Brand: data.Brand } : {}),
+      ...(data.Fabric !== undefined ? { Fabric: data.Fabric } : {}),
+      ...(data.Price !== undefined || data.RegularPrice !== undefined
+        ? { Price: data.RegularPrice || data.Price }
+        : {}),
+      ...(data.DiscountPrice !== undefined ? { DiscountPrice: data.DiscountPrice } : {}),
+      ...(data.SKU !== undefined ? { SKU: data.SKU } : {}),
+      UpdatedDate: new Date().toISOString(),
+      UpdatedBy: 'Admin',
     };
-    return this.http.put<any>(`${this.apiUrl}/product/update/${id}`, payload).pipe(
-      map((res) => this.formatProduct(res?.data || res))
+
+    return from(
+      this.supabase.client
+        .from('Products')
+        .update(payload)
+        .eq('Id', id)
+        .select('*, Category(*), SubCategory(*), ProductImages(*), ProductVariants(*, Sizes(*), Colors(*))')
+        .single()
+    ).pipe(
+      map(({ data: updated, error }) => {
+        if (error) throw error;
+        return this.formatProduct(updated);
+      })
     );
   }
 
   deleteProduct(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/product/delete/${id}`);
+    return from(
+      this.supabase.client
+        .from('Products')
+        .update({ IsMarkToDelete: true, UpdatedDate: new Date().toISOString() })
+        .eq('Id', id)
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw error;
+        return { message: 'Product deleted successfully' };
+      })
+    );
   }
 
   // Product Variants
   getVariantsByProduct(productId: number): Observable<ProductVariant[]> {
-    return this.http.get<any>(`${this.apiUrl}/product-variant/get-by-product/${productId}`).pipe(
-      map((res) => {
-        const list = res?.data || res || [];
-        return (Array.isArray(list) ? list : []).map((v: any) => ({
+    return from(
+      this.supabase.client
+        .from('ProductVariants')
+        .select('*, Sizes(*), Colors(*)')
+        .eq('ProductId', productId)
+        .eq('IsMarkToDelete', false)
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) return [];
+        return (data || []).map((v: any) => ({
           ...v,
-          Id: v.Id ?? v.id,
-          StockQuantity:
-            v.StockQuantity !== undefined
-              ? Number(v.StockQuantity)
-              : v.stockQuantity !== undefined
-              ? Number(v.stockQuantity)
-              : 0,
+          Id: v.Id,
+          StockQuantity: Number(v.StockQuantity || 0),
+          Sizes: v.Sizes,
+          Colors: v.Colors,
         }));
       }),
       catchError(() => of([]))
@@ -221,60 +320,107 @@ export class ProductService {
 
   createVariant(data: Partial<ProductVariant>): Observable<ProductVariant> {
     const payload = {
-      ...data,
-      stockQuantity: data.StockQuantity,
-      StockQuantity: data.StockQuantity,
-      stock: data.StockQuantity,
-      Stock: data.StockQuantity,
-      quantity: data.StockQuantity,
-      Quantity: data.StockQuantity,
+      ProductId: data.ProductId,
+      SizeId: data.SizeId,
+      ColorId: data.ColorId || null,
+      StockQuantity: Number(data.StockQuantity || 0),
+      IsMarkToDelete: false,
+      CreatedBy: 'Admin',
     };
-    return this.http.post<any>(`${this.apiUrl}/product-variant/create`, payload).pipe(
-      map((res) => res?.data || res),
-      catchError(() => of({ Id: Date.now(), ...payload } as any))
+
+    return from(
+      this.supabase.client
+        .from('ProductVariants')
+        .insert(payload)
+        .select('*, Sizes(*), Colors(*)')
+        .single()
+    ).pipe(
+      map(({ data: created, error }) => {
+        if (error) throw error;
+        return created;
+      })
     );
   }
 
   updateVariant(id: number, data: Partial<ProductVariant>): Observable<ProductVariant> {
-    const payload = {
-      ...data,
-      stockQuantity: data.StockQuantity,
-      StockQuantity: data.StockQuantity,
-      stock: data.StockQuantity,
-      Stock: data.StockQuantity,
-      quantity: data.StockQuantity,
-      Quantity: data.StockQuantity,
+    const payload: any = {
+      ...(data.SizeId !== undefined ? { SizeId: data.SizeId } : {}),
+      ...(data.ColorId !== undefined ? { ColorId: data.ColorId } : {}),
+      ...(data.StockQuantity !== undefined ? { StockQuantity: Number(data.StockQuantity) } : {}),
+      UpdatedDate: new Date().toISOString(),
+      UpdatedBy: 'Admin',
     };
-    return this.http.put<any>(`${this.apiUrl}/product-variant/update/${id}`, payload).pipe(
-      map((res) => res?.data || res),
-      catchError(() => {
-        return this.http.patch<any>(`${this.apiUrl}/product-variant/update/${id}`, payload).pipe(
-          map((res) => res?.data || res),
-          catchError(() => of({ Id: id, ...payload } as any))
-        );
+
+    return from(
+      this.supabase.client
+        .from('ProductVariants')
+        .update(payload)
+        .eq('Id', id)
+        .select('*, Sizes(*), Colors(*)')
+        .single()
+    ).pipe(
+      map(({ data: updated, error }) => {
+        if (error) throw error;
+        return updated;
       })
     );
   }
 
   deleteVariant(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/product-variant/delete/${id}`);
+    return from(
+      this.supabase.client
+        .from('ProductVariants')
+        .update({ IsMarkToDelete: true, UpdatedDate: new Date().toISOString() })
+        .eq('Id', id)
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw error;
+        return { message: 'Variant deleted successfully' };
+      })
+    );
   }
 
   // Product Images
   getImagesByProduct(productId: number): Observable<ProductImage[]> {
-    return this.http.get<any>(`${this.apiUrl}/product-image/get-by-product/${productId}`).pipe(
-      map((res) => res?.data || res || []),
+    return from(
+      this.supabase.client
+        .from('ProductImages')
+        .select('*')
+        .eq('ProductId', productId)
+        .eq('IsMarkToDelete', false)
+        .order('IsPrimary', { ascending: false })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) return [];
+        return (data || []).map((img: any) => ({
+          ...img,
+          ImageUrl: this.formatImageUrl(img.ImageUrl),
+        }));
+      }),
       catchError(() => of([]))
     );
   }
 
   createProductImage(data: Partial<ProductImage>): Observable<ProductImage> {
-    const prodId = data.ProductId;
-    return this.http.post<any>(`${this.apiUrl}/product-image/upload/${prodId}`, {
+    const payload = {
+      ProductId: data.ProductId,
       ImageUrl: data.ImageUrl,
       IsPrimary: data.IsPrimary ?? true,
-    }).pipe(
-      map((res) => res?.data || res)
+      IsMarkToDelete: false,
+      CreatedBy: 'Admin',
+    };
+
+    return from(
+      this.supabase.client
+        .from('ProductImages')
+        .insert(payload)
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: created, error }) => {
+        if (error) throw error;
+        return created;
+      })
     );
   }
 
@@ -283,21 +429,86 @@ export class ProductService {
     images: Array<{ ImageUrl: string; IsPrimary?: boolean }>,
     replaceAll: boolean = true
   ): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/product-image/upload-multiple/${productId}`, {
-      images,
-      replaceAll,
-    }).pipe(
-      map((res) => res?.data || res)
-    );
+    const run = async () => {
+      // Deduplicate incoming images by URL
+      const seen = new Set<string>();
+      const uniqueImages: Array<{ ImageUrl: string; IsPrimary?: boolean }> = [];
+      for (const img of images) {
+        if (img.ImageUrl && !seen.has(img.ImageUrl)) {
+          seen.add(img.ImageUrl);
+          uniqueImages.push(img);
+        }
+      }
+
+      if (replaceAll) {
+        await this.supabase.client
+          .from('ProductImages')
+          .delete()
+          .eq('ProductId', productId);
+      }
+
+      if (uniqueImages.length === 0) return [];
+
+      const rows = uniqueImages.map((img, idx) => ({
+        ProductId: productId,
+        ImageUrl: img.ImageUrl,
+        IsPrimary: img.IsPrimary !== undefined ? img.IsPrimary : idx === 0,
+        IsMarkToDelete: false,
+        CreatedBy: 'Admin',
+      }));
+
+      const { data, error } = await this.supabase.client
+        .from('ProductImages')
+        .insert(rows)
+        .select();
+
+      if (error) throw error;
+      return data;
+    };
+
+    return from(run());
   }
 
   setPrimaryImage(id: number): Observable<ProductImage> {
-    return this.http.patch<any>(`${this.apiUrl}/product-image/set-primary/${id}`, {}).pipe(
-      map((res) => res?.data || res)
-    );
+    const run = async () => {
+      const { data: img } = await this.supabase.client
+        .from('ProductImages')
+        .select('ProductId')
+        .eq('Id', id)
+        .single();
+
+      if (img?.ProductId) {
+        await this.supabase.client
+          .from('ProductImages')
+          .update({ IsPrimary: false })
+          .eq('ProductId', img.ProductId);
+      }
+
+      const { data, error } = await this.supabase.client
+        .from('ProductImages')
+        .update({ IsPrimary: true })
+        .eq('Id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    };
+
+    return from(run());
   }
 
   deleteProductImage(id: number): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.apiUrl}/product-image/delete/${id}`);
+    return from(
+      this.supabase.client
+        .from('ProductImages')
+        .update({ IsMarkToDelete: true })
+        .eq('Id', id)
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw error;
+        return { message: 'Image deleted successfully' };
+      })
+    );
   }
 }

@@ -84,7 +84,7 @@ export class LoginComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Login Failed',
-          detail: err?.error?.message || 'Invalid email/phone or password.',
+          detail: err?.message || err?.error?.message || 'Invalid email/phone or password.',
         });
       },
     });

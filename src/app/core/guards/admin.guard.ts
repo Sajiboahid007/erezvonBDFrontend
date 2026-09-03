@@ -9,8 +9,8 @@ export const adminGuard: CanActivateFn = () => {
   if (token && userJson) {
     try {
       const user = JSON.parse(userJson);
-      const roleName = user?.Role?.Name || user?.role || '';
-      if (roleName === 'Admin' || roleName === 'SuperAdmin') {
+      const roleName = (user?.Role?.Name || user?.Roles?.Name || user?.role || '').toLowerCase();
+      if (roleName === 'admin' || roleName === 'superadmin' || user?.RoleId === 1 || user?.RoleId === 2) {
         return true;
       }
     } catch {

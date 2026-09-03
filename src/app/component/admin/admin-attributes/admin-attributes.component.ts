@@ -174,7 +174,8 @@ export class AdminAttributesComponent implements OnInit {
   openEditCategory(cat: Category): void {
     this.categoryForm = { Id: cat.Id, Name: cat.Name, ImageUrl: cat.ImageUrl || '' };
     this.categorySelectedFile.set(null);
-    this.categoryImagePreview.set(cat.ImageUrl ? this.categoryService.formatImageUrl(cat.ImageUrl) : '');
+    const validUrl = cat.ImageUrl && (cat.ImageUrl.startsWith('http://') || cat.ImageUrl.startsWith('https://') || cat.ImageUrl.startsWith('data:')) ? cat.ImageUrl : '';
+    this.categoryImagePreview.set(validUrl);
     this.catUploader?.clear();
     this.categoryDialogVisible.set(true);
   }
@@ -188,9 +189,15 @@ export class AdminAttributesComponent implements OnInit {
     if (this.categorySelectedFile()) {
       try {
         const uploadRes = await firstValueFrom(this.productService.uploadImage(this.categorySelectedFile()!));
-        finalImageUrl = uploadRes?.url || uploadRes?.filename || uploadRes?.fullUrl || '';
-      } catch {
-        finalImageUrl = this.categoryImagePreview() || '';
+        finalImageUrl = uploadRes?.url || uploadRes?.fullUrl || '';
+      } catch (err: any) {
+        this.isCategoryUploading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Image Upload Failed',
+          detail: err?.message || 'Could not upload image to Cloudinary.',
+        });
+        return;
       }
     }
 
@@ -303,7 +310,8 @@ export class AdminAttributesComponent implements OnInit {
   openEditSubCategory(sub: SubCategory): void {
     this.subCategoryForm = { Id: sub.Id, CategoryId: sub.CategoryId, Name: sub.Name, ImageUrl: sub.ImageUrl || '' };
     this.subCategorySelectedFile.set(null);
-    this.subCategoryImagePreview.set(sub.ImageUrl ? this.categoryService.formatImageUrl(sub.ImageUrl) : '');
+    const validUrl = sub.ImageUrl && (sub.ImageUrl.startsWith('http://') || sub.ImageUrl.startsWith('https://') || sub.ImageUrl.startsWith('data:')) ? sub.ImageUrl : '';
+    this.subCategoryImagePreview.set(validUrl);
     this.subCatUploader?.clear();
     this.subCategoryDialogVisible.set(true);
   }
@@ -317,9 +325,15 @@ export class AdminAttributesComponent implements OnInit {
     if (this.subCategorySelectedFile()) {
       try {
         const uploadRes = await firstValueFrom(this.productService.uploadImage(this.subCategorySelectedFile()!));
-        finalImageUrl = uploadRes?.url || uploadRes?.filename || uploadRes?.fullUrl || '';
-      } catch {
-        finalImageUrl = this.subCategoryImagePreview() || '';
+        finalImageUrl = uploadRes?.url || uploadRes?.fullUrl || '';
+      } catch (err: any) {
+        this.isSubCategoryUploading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Image Upload Failed',
+          detail: err?.message || 'Could not upload image to Cloudinary.',
+        });
+        return;
       }
     }
 

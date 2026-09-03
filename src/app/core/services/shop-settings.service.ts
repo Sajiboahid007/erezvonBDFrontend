@@ -1,14 +1,13 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, catchError, map, of, tap } from 'rxjs';
+import { Observable, from, map, catchError, of, tap } from 'rxjs';
 import { ShopSettings } from '../models';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ShopSettingsService {
-  private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private supabase = inject(SupabaseService);
 
   settingsSignal = signal<ShopSettings>({
     StoreName: 'e-rezvonBD',
@@ -26,34 +25,36 @@ export class ShopSettingsService {
 
   formatImageUrl(url?: string): string {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-      return url;
-    }
-    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    if (cleanUrl.startsWith('/uploads/')) {
-      return `http://localhost:3000${cleanUrl}`;
-    }
-    return `http://localhost:3000/uploads/${url}`;
+    return url;
   }
 
   getSettings(): Observable<ShopSettings> {
-    return this.http.get<any>(`${this.apiUrl}/shop-settings/get`).pipe(
-      map((res) => {
-        const raw = res?.data || res;
-        if (!raw) return this.settingsSignal();
+    return from(
+      this.supabase.client
+        .from('ShopSettings')
+        .select('*')
+        .eq('IsMarkToDelete', false)
+        .order('Id', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+    ).pipe(
+      map(({ data: raw, error }) => {
+        if (error || !raw) {
+          return this.settingsSignal();
+        }
         return {
           StoreName: raw.ShopName || raw.StoreName || 'e-rezvonBD',
           Tagline: raw.Tagline || 'Premium Fashion & Lifestyle E-Commerce Store',
-          BannerUrl: raw.BannerUrl || raw.BannerImage ? this.formatImageUrl(raw.BannerUrl || raw.BannerImage) : undefined,
-          LogoUrl: raw.LogoUrl || raw.Logo ? this.formatImageUrl(raw.LogoUrl || raw.Logo) : undefined,
+          BannerUrl: raw.BannerUrl ? this.formatImageUrl(raw.BannerUrl) : undefined,
+          LogoUrl: raw.LogoUrl ? this.formatImageUrl(raw.LogoUrl) : undefined,
           CurrencySymbol: '৳',
           InsideDhakaDeliveryCharge: 60,
           OutsideDhakaDeliveryCharge: 120,
-          FreeDeliveryThreshold: raw.FreeDeliveryThreshold || 2000,
-          MaintenanceMode: raw.IsMaintenanceMode || raw.MaintenanceMode || false,
+          FreeDeliveryThreshold: Number(raw.FreeDeliveryThreshold) || 2000,
+          MaintenanceMode: Boolean(raw.IsMaintenanceMode),
           Email: raw.Email || 'support@erezvonbd.com',
           Phone: raw.Phone || '+880 1700-000000',
-          WhatsApp: raw.WhatsAppNumber || raw.WhatsApp || '+880 1700-000000',
+          WhatsApp: raw.WhatsAppNumber || '+880 1700-000000',
           Address: raw.Address || 'Dhaka, Bangladesh',
           FacebookUrl: raw.FacebookUrl,
           InstagramUrl: raw.InstagramUrl,
@@ -69,7 +70,7 @@ export class ShopSettingsService {
   }
 
   updateSettings(data: Partial<ShopSettings>): Observable<ShopSettings> {
-    const payload = {
+    const payload: any = {
       ShopName: data.StoreName,
       Tagline: data.Tagline,
       BannerUrl: data.BannerUrl,
@@ -82,11 +83,19 @@ export class ShopSettingsService {
       IsMaintenanceMode: data.MaintenanceMode,
       FacebookUrl: data.FacebookUrl,
       InstagramUrl: data.InstagramUrl,
+      UpdatedDate: new Date().toISOString(),
+      CreatedBy: 1,
     };
 
-    return this.http.put<any>(`${this.apiUrl}/shop-settings/update`, payload).pipe(
-      map((res) => {
-        const raw = res?.data || res;
+    return from(
+      this.supabase.client
+        .from('ShopSettings')
+        .upsert({ Id: 1, ...payload })
+        .select()
+        .single()
+    ).pipe(
+      map(({ data: raw, error }) => {
+        if (error) throw error;
         return {
           ...this.settingsSignal(),
           ...data,

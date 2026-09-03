@@ -1,6 +1,5 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of, switchMap } from 'rxjs';
+import { Observable, from, map, of, switchMap, catchError } from 'rxjs';
 import {
   Address,
   CreateOrderDto,
@@ -12,15 +11,19 @@ import {
   UpdateOrderStatusDto,
 } from '../models';
 import { AuthService } from './auth.service';
-import { findMatchingHexCode } from '../utils/color-palette';
+import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class OrderService {
-  private http = inject(HttpClient);
+  private supabase = inject(SupabaseService);
   private authService = inject(AuthService);
-  private apiUrl = 'http://localhost:3000/api';
+
+  formatImageUrl(url?: string): string {
+    if (!url) return '';
+    return url;
+  }
 
   createShippingAddress(address: Partial<Address>): Observable<number> {
     const user = this.authService.currentUserSignal();
@@ -34,20 +37,123 @@ export class OrderService {
       District: address.District || 'Dhaka',
       City: address.City || address.District || 'Dhaka',
       PostalCode: address.PostalCode || null,
+      IsMarkToDelete: false,
+      CreatedBy: 'USER',
     };
 
-    return this.http.post<any>(`${this.apiUrl}/address/create`, addressPayload).pipe(
-      map((res) => {
-        const id = res?.data?.Id || res?.data?.id || res?.Id || res?.id;
-        return Number(id);
+    return from(
+      this.supabase.client
+        .from('Address')
+        .insert(addressPayload)
+        .select('Id')
+        .single()
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) throw error;
+        return Number(data.Id);
       })
     );
   }
 
   createOrderWithPayload(payload: CreateOrderPayload): Observable<Order> {
-    return this.http.post<any>(`${this.apiUrl}/order/create`, payload).pipe(
-      map((res) => this.formatOrder(res?.data || res))
-    );
+    const user = this.authService.currentUserSignal();
+    const run = async (): Promise<Order> => {
+      const orderNumber = `ORD-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      // 1. Calculate items & totals
+      let subTotal = 0;
+      const orderItemRows: any[] = [];
+
+      for (const item of payload.Items || []) {
+        const { data: variant } = await this.supabase.client
+          .from('ProductVariants')
+          .select('*, Products(*), Sizes(*), Colors(*)')
+          .eq('Id', item.ProductVariantId)
+          .single();
+
+        const unitPrice = Number(variant?.Products?.DiscountPrice || variant?.Products?.Price || 0);
+        const lineTotal = unitPrice * item.Quantity;
+        subTotal += lineTotal;
+
+        orderItemRows.push({
+          ProductVariantId: item.ProductVariantId,
+          ProductName: variant?.Products?.Name || 'Product',
+          SizeName: variant?.Sizes?.Name || 'Standard',
+          ColorName: variant?.Colors?.Name || null,
+          Quantity: item.Quantity,
+          UnitPrice: unitPrice,
+          LineTotal: lineTotal,
+          IsMarkToDelete: false,
+          CreatedBy: 'USER',
+        });
+      }
+
+      const deliveryCharge = Number(payload.DeliveryCharge || 0);
+      const discount = Number(payload.Discount || 0);
+      const totalAmount = Math.max(0, subTotal + deliveryCharge - discount);
+
+      // 2. Insert Orders
+      const { data: order, error: orderErr } = await this.supabase.client
+        .from('Orders')
+        .insert({
+          UserId: user?.Id || null,
+          OrderNumber: orderNumber,
+          ShippingAddressId: payload.ShippingAddressId,
+          OrderStatusId: 1, // Pending
+          PaymentMethodId: payload.PaymentMethodId || 1,
+          SubTotal: subTotal,
+          DeliveryCharge: deliveryCharge,
+          Discount: discount,
+          TotalAmount: totalAmount,
+          IsInsideDhaka: payload.IsInsideDhaka ?? true,
+          IsPaid: false,
+          CourierName: payload.CourierName || null,
+          IsMarkToDelete: false,
+          CreatedBy: user?.Name || 'USER',
+        })
+        .select()
+        .single();
+
+      if (orderErr) throw orderErr;
+
+      // 3. Insert OrderItems
+      if (orderItemRows.length > 0) {
+        const itemsWithOrderId = orderItemRows.map((i) => ({
+          ...i,
+          OrderId: order.Id,
+        }));
+        await this.supabase.client.from('OrderItems').insert(itemsWithOrderId);
+      }
+
+      // 4. Insert initial OrderHistory
+      await this.supabase.client.from('OrderHistory').insert({
+        OrderId: order.Id,
+        OrderStatusId: 1,
+        Remarks: 'Order placed successfully',
+        IsMarkToDelete: false,
+        CreatedBy: 'SYSTEM',
+      });
+
+      // 5. Insert Payment if payment details provided
+      if (payload.PaymentDetails?.TransactionId) {
+        await this.supabase.client.from('Payments').insert({
+          OrderId: order.Id,
+          PaymentMethodId: payload.PaymentMethodId || 1,
+          Amount: payload.PaymentDetails.Amount || totalAmount,
+          TransactionId: payload.PaymentDetails.TransactionId,
+          SenderNumber: payload.PaymentDetails.SenderNumber || null,
+          IsSuccessful: false,
+          IsMarkToDelete: false,
+          CreatedBy: 'USER',
+        });
+      }
+
+      // Fetch full created order
+      const full = await this.fetchFullOrder(order.Id);
+      return this.formatOrder(full);
+    };
+
+    return from(run());
   }
 
   createOrder(dto: CreateOrderDto | CreateOrderPayload): Observable<Order> {
@@ -92,7 +198,6 @@ export class OrderService {
       return sendOrder(dto.ShippingAddressId);
     }
 
-    // Step 1: Auto-create shipping address record first
     const addressToCreate = (dto as any).Address || {
       Name: user?.Name || 'Customer',
       Phone: user?.Phone || '',
@@ -115,65 +220,133 @@ export class OrderService {
       return of([]);
     }
 
-    return this.http.get<any>(`${this.apiUrl}/order/get/${userId}`).pipe(
-      map((res) => {
-        const list = res?.data || res || [];
-        return (Array.isArray(list) ? list : []).map((o: any) => this.formatOrder(o));
+    return from(
+      this.supabase.client
+        .from('Orders')
+        .select('*, Address(*), OrderStatus(*), PaymentMethods(*), OrderItems(*), OrderHistory(*, OrderStatus(*))')
+        .eq('UserId', userId)
+        .eq('IsMarkToDelete', false)
+        .order('Id', { ascending: false })
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) return [];
+        return (data || []).map((o: any) => this.formatOrder(o));
       }),
       catchError(() => of([]))
     );
   }
 
   getOrderById(id: number): Observable<Order> {
-    return this.http.get<any>(`${this.apiUrl}/order/get-by-id/${id}`).pipe(
-      map((res) => this.formatOrder(res?.data || res))
+    return from(this.fetchFullOrder(id)).pipe(
+      map((order) => this.formatOrder(order))
     );
   }
 
   trackOrder(orderNumber: string, phone: string): Observable<Order> {
-    return this.http.post<any>(`${this.apiUrl}/order/track`, { orderNumber, phone }).pipe(
-      map((res) => this.formatOrder(res?.data || res))
-    );
+    const run = async () => {
+      const { data: order, error } = await this.supabase.client
+        .from('Orders')
+        .select('*, Address(*), OrderStatus(*), PaymentMethods(*), OrderItems(*), OrderHistory(*, OrderStatus(*))')
+        .eq('OrderNumber', orderNumber.trim())
+        .eq('IsMarkToDelete', false)
+        .single();
+
+      if (error || !order) {
+        throw new Error('Order not found with provided order number');
+      }
+
+      return this.formatOrder(order);
+    };
+
+    return from(run());
   }
 
-  // Admin Order Management
   getAdminOrders(filters?: OrderFilterParams): Observable<PaginatedResponse<Order>> {
-    let params = new HttpParams();
-    if (filters) {
-      if (filters.page) params = params.set('page', filters.page.toString());
-      if (filters.limit) params = params.set('limit', filters.limit.toString());
-      if (filters.orderStatusId) params = params.set('statusId', filters.orderStatusId.toString());
-      if (filters.search) params = params.set('search', filters.search);
-      if (filters.fromDate) params = params.set('fromDate', filters.fromDate);
-      if (filters.toDate) params = params.set('toDate', filters.toDate);
+    const page = Number(filters?.page) || 1;
+    const limit = Number(filters?.limit) || 20;
+    const fromIndex = (page - 1) * limit;
+    const toIndex = fromIndex + limit - 1;
+
+    let query = this.supabase.client
+      .from('Orders')
+      .select(
+        '*, Address(*), OrderStatus(*), PaymentMethods(*), OrderItems(*), OrderHistory(*, OrderStatus(*))',
+        { count: 'exact' }
+      )
+      .eq('IsMarkToDelete', false)
+      .order('Id', { ascending: false })
+      .range(fromIndex, toIndex);
+
+    if (filters?.orderStatusId) {
+      query = query.eq('OrderStatusId', Number(filters.orderStatusId));
     }
-    return this.http.get<any>(`${this.apiUrl}/order/admin/get-all`, { params }).pipe(
-      map((res) => {
-        const raw = res?.data || res;
-        const rawItems = raw?.items || (Array.isArray(raw) ? raw : []);
-        const formattedItems = rawItems.map((o: any) => this.formatOrder(o));
+    if (filters?.search) {
+      query = query.ilike('OrderNumber', `%${filters.search.trim()}%`);
+    }
+
+    return from(query).pipe(
+      map(({ data, count, error }) => {
+        if (error) {
+          console.error('Error fetching admin orders:', error);
+          return { data: [], total: 0, page, limit, totalPages: 1 };
+        }
+        const total = count || (data || []).length;
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        const formatted = (data || []).map((o: any) => this.formatOrder(o));
         return {
-          data: formattedItems,
-          total: raw?.pagination?.total || formattedItems.length,
-          page: raw?.pagination?.page || 1,
-          limit: raw?.pagination?.limit || 20,
-          totalPages: raw?.pagination?.totalPages || 1,
+          data: formatted,
+          total,
+          page,
+          limit,
+          totalPages,
         };
       }),
-      catchError(() => of({ data: [], total: 0, page: 1, limit: 20, totalPages: 1 }))
+      catchError(() => of({ data: [], total: 0, page: 1, limit, totalPages: 1 }))
     );
   }
 
   updateOrderStatus(id: number, dto: UpdateOrderStatusDto): Observable<Order> {
-    return this.http.patch<any>(`${this.apiUrl}/order/update-status/${id}`, dto).pipe(
-      map((res) => this.formatOrder(res?.data || res))
-    );
+    const run = async () => {
+      const statusId = dto.OrderStatusId || (dto as any).statusId;
+      await this.supabase.client
+        .from('Orders')
+        .update({
+          OrderStatusId: statusId,
+          UpdatedDate: new Date().toISOString(),
+        })
+        .eq('Id', id);
+
+      await this.supabase.client.from('OrderHistory').insert({
+        OrderId: id,
+        OrderStatusId: statusId,
+        Remarks: dto.Remarks || (dto as any).remarks || 'Status updated by admin',
+        IsMarkToDelete: false,
+        CreatedBy: 'Admin',
+      });
+
+      const full = await this.fetchFullOrder(id);
+      return this.formatOrder(full);
+    };
+
+    return from(run());
   }
 
   updateCourier(id: number, dto: UpdateCourierDto): Observable<Order> {
-    return this.http.patch<any>(`${this.apiUrl}/order/update-status/${id}`, dto).pipe(
-      map((res) => this.formatOrder(res?.data || res))
-    );
+    const run = async () => {
+      await this.supabase.client
+        .from('Orders')
+        .update({
+          CourierName: dto.CourierName || (dto as any).courierName,
+          TrackingNumber: dto.TrackingNumber || (dto as any).trackingNumber,
+          UpdatedDate: new Date().toISOString(),
+        })
+        .eq('Id', id);
+
+      const full = await this.fetchFullOrder(id);
+      return this.formatOrder(full);
+    };
+
+    return from(run());
   }
 
   updateOrder(id: number, data: {
@@ -183,208 +356,77 @@ export class OrderService {
     TrackingNumber?: string;
     IsPaid?: boolean;
   }): Observable<Order> {
-    const payload = {
-      ...data,
-      statusId: data.OrderStatusId,
-      orderStatusId: data.OrderStatusId,
-      courierName: data.CourierName,
-      trackingNumber: data.TrackingNumber,
-      remarks: data.Remarks,
+    const run = async () => {
+      const updatePayload: any = {
+        UpdatedDate: new Date().toISOString(),
+      };
+      if (data.OrderStatusId) updatePayload.OrderStatusId = data.OrderStatusId;
+      if (data.CourierName) updatePayload.CourierName = data.CourierName;
+      if (data.TrackingNumber) updatePayload.TrackingNumber = data.TrackingNumber;
+      if (data.IsPaid !== undefined) updatePayload.IsPaid = data.IsPaid;
+
+      await this.supabase.client.from('Orders').update(updatePayload).eq('Id', id);
+
+      if (data.OrderStatusId) {
+        await this.supabase.client.from('OrderHistory').insert({
+          OrderId: id,
+          OrderStatusId: data.OrderStatusId,
+          Remarks: data.Remarks || 'Order updated',
+          IsMarkToDelete: false,
+          CreatedBy: 'Admin',
+        });
+      }
+
+      const full = await this.fetchFullOrder(id);
+      return this.formatOrder(full);
     };
-    return this.http.patch<any>(`${this.apiUrl}/order/update-status/${id}`, payload).pipe(
-      map((res) => this.formatOrder(res?.data || res)),
-      catchError(() => {
-        return this.http.put<any>(`${this.apiUrl}/order/update/${id}`, payload).pipe(
-          map((res) => this.formatOrder(res?.data || res)),
-          catchError(() => of(this.formatOrder({ Id: id, ...data })))
-        );
-      })
-    );
+
+    return from(run());
   }
 
-  formatImageUrl(url?: string): string {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-      return url;
-    }
-    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    if (cleanUrl.startsWith('/uploads/')) {
-      return `http://localhost:3000${cleanUrl}`;
-    }
-    return `http://localhost:3000/uploads/${url}`;
+  private async fetchFullOrder(id: number): Promise<any> {
+    const { data } = await this.supabase.client
+      .from('Orders')
+      .select('*, Address(*), OrderStatus(*), PaymentMethods(*), OrderItems(*), OrderHistory(*, OrderStatus(*))')
+      .eq('Id', id)
+      .single();
+    return data;
   }
 
   formatOrder(o: any): Order {
     if (!o) return o;
-    const subTotal =
-      o.SubTotal !== undefined && o.SubTotal !== null
-        ? Number(o.SubTotal)
-        : o.subTotal !== undefined && o.subTotal !== null
-        ? Number(o.subTotal)
-        : 0;
+    const subTotal = Number(o.SubTotal || 0);
+    const deliveryCharge = Number(o.DeliveryCharge || 0);
+    const discount = Number(o.Discount || 0);
+    const totalAmount = Number(o.TotalAmount || subTotal + deliveryCharge - discount);
 
-    const delivery =
-      o.DeliveryCharge !== undefined && o.DeliveryCharge !== null
-        ? Number(o.DeliveryCharge)
-        : o.deliveryCharge !== undefined && o.deliveryCharge !== null
-        ? Number(o.deliveryCharge)
-        : 0;
-
-    const discount =
-      o.DiscountAmount !== undefined && o.DiscountAmount !== null
-        ? Number(o.DiscountAmount)
-        : o.discountAmount !== undefined && o.discountAmount !== null
-        ? Number(o.discountAmount)
-        : Number(o.Discount || o.discount || 0);
-
-    const grandTotal =
-      o.GrandTotal !== undefined && o.GrandTotal !== null
-        ? Number(o.GrandTotal)
-        : o.grandTotal !== undefined && o.grandTotal !== null
-        ? Number(o.grandTotal)
-        : o.Total !== undefined && o.Total !== null
-        ? Number(o.Total)
-        : o.total !== undefined && o.total !== null
-        ? Number(o.total)
-        : o.totalAmount !== undefined && o.totalAmount !== null
-        ? Number(o.totalAmount)
-        : o.TotalAmount !== undefined && o.TotalAmount !== null
-        ? Number(o.TotalAmount)
-        : o.amount !== undefined && o.amount !== null
-        ? Number(o.amount)
-        : o.Amount !== undefined && o.Amount !== null
-        ? Number(o.Amount)
-        : subTotal + delivery - discount;
-
-    const dateVal =
-      o.CreatedAt ||
-      o.createdAt ||
-      o.created_at ||
-      o.Date ||
-      o.date ||
-      o.OrderDate ||
-      o.orderDate ||
-      o.UpdatedAt ||
-      o.updatedAt ||
-      new Date().toISOString();
-
-    const address =
-      o.ShippingAddress ||
-      o.shippingAddress ||
-      o.Address ||
-      o.address ||
-      o.User?.Addresses?.[0] ||
-      o.user?.addresses?.[0] || {
-        Name:
-          o.CustomerName ||
-          o.customerName ||
-          o.customer ||
-          o.User?.Name ||
-          o.user?.name ||
-          o.Name ||
-          o.name ||
-          'Guest Customer',
-        Phone:
-          o.CustomerPhone ||
-          o.customerPhone ||
-          o.phone ||
-          o.Phone ||
-          o.User?.Phone ||
-          o.user?.phone ||
-          '',
-        Street: o.street || o.Street || '',
-        Thana: o.thana || o.Thana || '',
-        District: o.district || o.District || '',
-        City: o.city || o.City || '',
-      };
-
-    const statusObj =
-      o.OrderStatus ||
-      o.orderStatus ||
-      (typeof o.status === 'string'
-        ? { Id: o.OrderStatusId || 1, Name: o.status }
-        : typeof o.Status === 'string'
-        ? { Id: o.OrderStatusId || 1, Name: o.Status }
-        : o.status || o.Status || { Id: 1, Name: 'Pending' });
-
-    const items = (o.OrderItems || o.orderItems || o.items || o.Items || []).map((item: any) => {
-      const variant = item.ProductVariants || item.productVariants || item.ProductVariant || item.productVariant || item.Variant || item.variant;
-      const product = variant?.Products || variant?.products || variant?.Product || variant?.product || item.Product || item.product;
-      
-      const sizeName = item.SizeName || item.sizeName || variant?.Sizes?.Name || variant?.sizes?.Name || variant?.Size?.Name || variant?.size?.Name || item.Size?.Name || item.Size || item.size || '';
-      const colorName = item.ColorName || item.colorName || variant?.Colors?.Name || variant?.colors?.Name || variant?.Color?.Name || variant?.color?.Name || item.Color?.Name || item.Color || item.color || '';
-      const colorHex = variant?.Colors?.HexCode || variant?.Color?.HexCode || findMatchingHexCode(colorName) || '#3B82F6';
-
-      const rawImage =
-        item.ImageUrl ||
-        item.imageUrl ||
-        item.image ||
-        item.Image ||
-        variant?.Products?.ProductImages?.[0]?.ImageUrl ||
-        variant?.Products?.ProductImages?.[0]?.imageUrl ||
-        variant?.Product?.ProductImages?.[0]?.ImageUrl ||
-        variant?.Product?.Images?.[0]?.ImageUrl ||
-        variant?.ProductImages?.[0]?.ImageUrl ||
-        variant?.Images?.[0]?.ImageUrl ||
-        product?.ProductImages?.[0]?.ImageUrl ||
-        product?.ProductImages?.[0]?.imageUrl ||
-        product?.Images?.[0]?.ImageUrl ||
-        product?.Images?.[0]?.imageUrl ||
-        product?.ImageUrl ||
-        product?.imageUrl ||
-        '';
-
-      const unitPrice = Number(
-        item.UnitPrice ?? item.unitPrice ?? item.price ?? item.Price ?? (product?.DiscountPrice || product?.RegularPrice || 0)
-      );
-      const qty = item.Quantity ?? item.quantity ?? item.qty ?? item.Qty ?? 1;
-      const formattedImg = this.formatImageUrl(rawImage);
-
-      return {
-        ...item,
-        Id: item.Id || item.id || 0,
-        Quantity: qty,
-        UnitPrice: unitPrice,
-        TotalPrice: Number(item.TotalPrice ?? item.totalPrice ?? (qty * unitPrice)),
-        ProductName: item.ProductName || product?.Name || item.name || 'Product',
-        SizeName: sizeName,
-        ColorName: colorName,
-        ColorHex: colorHex,
-        ImageUrl: formattedImg,
-        ProductVariant: {
-          Id: variant?.Id || variant?.id || item.ProductVariantId || item.productVariantId,
-          Size: sizeName ? { Name: sizeName } : undefined,
-          Color: colorName ? { Name: colorName, HexCode: colorHex } : undefined,
-          Product: {
-            Id: product?.Id || product?.id || item.ProductId || item.productId || 0,
-            Name: product?.Name || product?.name || item.ProductName || item.productName || item.Name || item.name || 'Product',
-            SKU: product?.SKU || product?.sku || item.SKU || item.sku || '',
-            Images: formattedImg ? [{ ImageUrl: formattedImg, IsPrimary: true }] : [],
-          },
-        },
-      };
-    });
+    const items = (o.OrderItems || []).map((i: any) => ({
+      Id: i.Id,
+      OrderId: i.OrderId,
+      ProductVariantId: i.ProductVariantId,
+      ProductName: i.ProductName,
+      SizeName: i.SizeName,
+      ColorName: i.ColorName,
+      Quantity: Number(i.Quantity || 1),
+      UnitPrice: Number(i.UnitPrice || 0),
+      LineTotal: Number(i.LineTotal || i.Quantity * i.UnitPrice || 0),
+    }));
 
     return {
       ...o,
-      Id: o.Id ?? o.id ?? 0,
-      OrderNumber:
-        o.OrderNumber ||
-        o.orderNumber ||
-        o.order_number ||
-        (o.Id ? `#ORD-${o.Id}` : o.id ? `#ORD-${o.id}` : 'N/A'),
+      Id: o.Id,
+      OrderNumber: o.OrderNumber,
       SubTotal: subTotal,
-      DeliveryCharge: delivery,
-      DiscountAmount: discount,
-      GrandTotal: grandTotal,
-      CreatedAt: dateVal,
-      ShippingAddress: address,
-      OrderStatus: statusObj,
-      OrderStatusId: o.OrderStatusId || o.orderStatusId || statusObj?.Id || 1,
-      IsPaid: Boolean(
-        o.IsPaid ?? o.isPaid ?? (o.paymentStatus === 'PAID' || o.PaymentStatus === 'PAID' || o.is_paid)
-      ),
+      DeliveryCharge: deliveryCharge,
+      Discount: discount,
+      TotalAmount: totalAmount,
+      IsPaid: Boolean(o.IsPaid),
+      OrderStatus: o.OrderStatus || { Id: o.OrderStatusId, Name: 'Pending' },
+      PaymentMethod: o.PaymentMethods || { Id: o.PaymentMethodId, Name: 'Cash on Delivery' },
+      ShippingAddress: o.Address || {},
+      Items: items,
       OrderItems: items,
+      History: o.OrderHistory || [],
     };
   }
 }
