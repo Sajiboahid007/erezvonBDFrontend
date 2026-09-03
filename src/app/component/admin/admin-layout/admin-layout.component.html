@@ -166,7 +166,7 @@
 </div>
 
 <!-- Mobile Admin Navigation Drawer -->
-<p-drawer [visible]="mobileSidebarOpen()" (visibleChange)="mobileSidebarOpen.set($event)" position="left" styleClass="w-72 bg-surface-900 text-white">
+<p-drawer [visible]="mobileSidebarOpen()" (visibleChange)="mobileSidebarOpen.set($event)" position="left" styleClass="admin-mobile-drawer w-72 sm:w-80">
   <ng-template #header>
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
@@ -186,7 +186,7 @@
         routerLink="/admin/dashboard" 
         (click)="mobileSidebarOpen.set(false)"
         routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
-        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-slate-200 transition-all"
       >
         <i class="pi pi-chart-line text-base"></i>
         <span>Dashboard</span>
@@ -196,7 +196,7 @@
         routerLink="/admin/products" 
         (click)="mobileSidebarOpen.set(false)"
         routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
-        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-slate-200 transition-all"
       >
         <i class="pi pi-box text-base"></i>
         <span>Products & Inventory</span>
@@ -206,7 +206,7 @@
         routerLink="/admin/orders" 
         (click)="mobileSidebarOpen.set(false)"
         routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
-        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-slate-200 transition-all"
       >
         <i class="pi pi-receipt text-base"></i>
         <span>Customer Orders</span>
@@ -216,7 +216,7 @@
         routerLink="/admin/delivery-history" 
         (click)="mobileSidebarOpen.set(false)"
         routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
-        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-slate-200 transition-all"
       >
         <i class="pi pi-check-circle text-base"></i>
         <span>Delivery History</span>
@@ -226,7 +226,7 @@
         routerLink="/admin/attributes" 
         (click)="mobileSidebarOpen.set(false)"
         routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
-        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-slate-200 transition-all"
       >
         <i class="pi pi-tags text-base"></i>
         <span>Store Attributes</span>
@@ -236,7 +236,7 @@
         routerLink="/admin/settings" 
         (click)="mobileSidebarOpen.set(false)"
         routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
-        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-slate-200 transition-all"
       >
         <i class="pi pi-cog text-base"></i>
         <span>Store Settings</span>
@@ -245,11 +245,11 @@
     </nav>
 
     <!-- Bottom Actions -->
-    <div class="pt-4 border-t border-surface-800 flex flex-col gap-2">
+    <div class="pt-4 border-t border-slate-800 flex flex-col gap-2">
       <a 
         routerLink="/" 
         (click)="mobileSidebarOpen.set(false)"
-        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 text-xs font-semibold transition-colors"
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-slate-300 text-xs font-semibold transition-colors"
       >
         <i class="pi pi-external-link text-sm"></i>
         <span>Visit Storefront</span>

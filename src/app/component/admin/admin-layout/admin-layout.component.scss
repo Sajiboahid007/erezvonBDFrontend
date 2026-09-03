@@ -2,3 +2,35 @@
   display: block;
   height: 100vh;
 }
+
+/* ==========================================
+   Admin Mobile Menu Drawer Dark Theme
+   ========================================== */
+::ng-deep .admin-mobile-drawer {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-right: 1px solid #1e293b !important;
+
+  .p-drawer-content {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    padding: 1rem !important;
+  }
+
+  .p-drawer-header {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid #1e293b !important;
+    padding: 1rem 1.25rem !important;
+
+    .p-drawer-close-button {
+      color: #94a3b8 !important;
+      border-radius: 0.5rem !important;
+      
+      &:hover {
+        color: #ffffff !important;
+        background: #1e293b !important;
+      }
+    }
+  }
+}
