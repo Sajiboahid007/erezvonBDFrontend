@@ -19,7 +19,7 @@ export class CategoryService {
     return from(
       this.supabase.client
         .from('Category')
-        .select('*')
+        .select('*, Products(count)')
         .eq('IsMarkToDelete', false)
         .order('Id', { ascending: true })
     ).pipe(
@@ -31,6 +31,9 @@ export class CategoryService {
         return (data || []).map((c: any) => ({
           ...c,
           ImageUrl: c.ImageUrl ? this.formatImageUrl(c.ImageUrl) : undefined,
+          _count: {
+            Products: c.Products?.[0]?.count || 0,
+          },
         }));
       }),
       catchError(() => of([]))
@@ -121,7 +124,7 @@ export class CategoryService {
   getSubCategories(categoryId?: number): Observable<SubCategory[]> {
     let query = this.supabase.client
       .from('SubCategory')
-      .select('*')
+      .select('*, Products(count)')
       .eq('IsMarkToDelete', false)
       .order('Id', { ascending: true });
 
@@ -138,6 +141,9 @@ export class CategoryService {
         return (data || []).map((s: any) => ({
           ...s,
           ImageUrl: s.ImageUrl ? this.formatImageUrl(s.ImageUrl) : undefined,
+          _count: {
+            Products: s.Products?.[0]?.count || 0,
+          },
         }));
       }),
       catchError(() => of([]))

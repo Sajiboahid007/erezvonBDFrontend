@@ -56,12 +56,26 @@ export class ShopCatalogComponent implements OnInit {
 
     this.route.queryParams.subscribe((params) => {
       if (params['categoryId']) {
-        this.selectedCategory.set(Number(params['categoryId']));
-        this.loadSubCategories(Number(params['categoryId']));
+        const catId = Number(params['categoryId']);
+        this.selectedCategory.set(catId);
+        this.loadSubCategories(catId);
+      } else {
+        this.selectedCategory.set(undefined);
+        this.selectedSubCategory.set(undefined);
+        this.subCategories.set([]);
       }
+
+      if (params['subCategoryId']) {
+        this.selectedSubCategory.set(Number(params['subCategoryId']));
+      }
+
       if (params['search']) {
         this.searchQuery.set(params['search']);
+      } else {
+        this.searchQuery.set('');
       }
+
+      this.currentPage.set(1);
       this.loadProducts();
     });
   }
@@ -116,19 +130,25 @@ export class ShopCatalogComponent implements OnInit {
   }
 
   selectCategory(catId?: number): void {
-    this.selectedCategory.set(catId);
-    this.selectedSubCategory.set(undefined);
-    if (catId) {
-      this.loadSubCategories(catId);
-    } else {
+    if (this.selectedCategory() === catId && catId !== undefined) {
+      this.selectedCategory.set(undefined);
+      this.selectedSubCategory.set(undefined);
       this.subCategories.set([]);
+    } else {
+      this.selectedCategory.set(catId);
+      this.selectedSubCategory.set(undefined);
+      if (catId) {
+        this.loadSubCategories(catId);
+      } else {
+        this.subCategories.set([]);
+      }
     }
     this.currentPage.set(1);
     this.loadProducts();
   }
 
   selectSubCategory(subId?: number): void {
-    this.selectedSubCategory.set(subId);
+    this.selectedSubCategory.set(this.selectedSubCategory() === subId ? undefined : subId);
     this.currentPage.set(1);
     this.loadProducts();
   }
@@ -154,6 +174,7 @@ export class ShopCatalogComponent implements OnInit {
   resetFilters(): void {
     this.selectedCategory.set(undefined);
     this.selectedSubCategory.set(undefined);
+    this.subCategories.set([]);
     this.priceRange.set([0, 10000]);
     this.selectedSize.set(undefined);
     this.selectedColor.set(undefined);
