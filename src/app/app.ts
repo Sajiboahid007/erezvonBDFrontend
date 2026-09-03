@@ -1,8 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, effect } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { SharedModule } from '../shared.module';
 import { CartDrawerComponent } from './component/cart-drawer/cart-drawer.component';
+import { ShopSettingsService } from './core/services/shop-settings.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +16,31 @@ import { CartDrawerComponent } from './component/cart-drawer/cart-drawer.compone
 export class App implements OnInit {
   title = 'e-rezvonBD-front-end';
   private router = inject(Router);
+  private settingsService = inject(ShopSettingsService);
+  private titleService = inject(Title);
+
+  constructor() {
+    this.settingsService.getSettings().subscribe();
+
+    effect(() => {
+      const settings = this.settingsService.settingsSignal();
+      if (settings.StoreName) {
+        this.titleService.setTitle(
+          `${settings.StoreName} | ${settings.Tagline || 'Premium Fashion & Lifestyle'}`
+        );
+      }
+      const iconUrl = settings.LogoUrl;
+      if (iconUrl) {
+        let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = iconUrl;
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.router.events

@@ -5,6 +5,8 @@ import { AddToCartRequest, Cart, CartItem } from '../models';
 import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
 
+const GUEST_CART_KEY = 'guest_cart_items';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -36,9 +38,7 @@ export class CartService {
   });
 
   constructor() {
-    if (this.authService.isAuthenticated()) {
-      this.loadCart().subscribe();
-    }
+    this.loadCart().subscribe();
   }
 
   toggleCartDrawer(state?: boolean): void {
@@ -58,13 +58,52 @@ export class CartService {
     return url;
   }
 
+  private getGuestCartFromStorage(): CartItem[] {
+    try {
+      const data = localStorage.getItem(GUEST_CART_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveGuestCartToStorage(items: CartItem[]): void {
+    try {
+      localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.error('Failed to save guest cart to localStorage:', e);
+    }
+  }
+
+  private buildGuestCartObject(items: CartItem[]): Cart {
+    const totalItems = items.reduce((acc, i) => acc + i.Quantity, 0);
+    const subTotal = items.reduce((acc, i) => {
+      const p = i.ProductVariant?.Product?.DiscountPrice || i.ProductVariant?.Product?.RegularPrice || 0;
+      return acc + p * i.Quantity;
+    }, 0);
+
+    return {
+      Id: 0,
+      UserId: 0,
+      TotalItems: totalItems,
+      SubTotal: subTotal,
+      Items: items,
+    };
+  }
+
   loadCart(): Observable<Cart | null> {
     const userId = this.getCurrentUserId();
-    if (!userId) {
-      return of(null);
-    }
 
     const run = async (): Promise<Cart | null> => {
+      // If user is guest (not logged in), read from localStorage
+      if (!userId) {
+        const guestItems = this.getGuestCartFromStorage();
+        return this.buildGuestCartObject(guestItems);
+      }
+
+      // If user is logged in, first merge any guest cart items if exist
+      const guestItems = this.getGuestCartFromStorage();
+
       // Find or create cart for user
       let { data: cart } = await this.supabase.client
         .from('Cart')
@@ -84,6 +123,40 @@ export class CartService {
 
       if (!cart) return null;
 
+      // Merge guest cart items into database cart if any
+      if (guestItems.length > 0) {
+        for (const gItem of guestItems) {
+          const { data: existing } = await this.supabase.client
+            .from('CartItems')
+            .select('Id, Quantity')
+            .eq('CartId', cart.Id)
+            .eq('ProductVariantId', gItem.ProductVariantId)
+            .eq('IsMarkToDelete', false)
+            .maybeSingle();
+
+          if (existing) {
+            await this.supabase.client
+              .from('CartItems')
+              .update({
+                Quantity: existing.Quantity + gItem.Quantity,
+                UpdatedDate: new Date().toISOString(),
+              })
+              .eq('Id', existing.Id);
+          } else {
+            const price = gItem.ProductVariant?.Product?.DiscountPrice || gItem.ProductVariant?.Product?.RegularPrice || 0;
+            await this.supabase.client.from('CartItems').insert({
+              CartId: cart.Id,
+              ProductVariantId: gItem.ProductVariantId,
+              Quantity: gItem.Quantity,
+              UnitPrice: price,
+              IsMarkToDelete: false,
+              CreatedBy: 'USER',
+            });
+          }
+        }
+        localStorage.removeItem(GUEST_CART_KEY);
+      }
+
       // Fetch cart items with variant and product relations
       const { data: rawItems } = await this.supabase.client
         .from('CartItems')
@@ -96,8 +169,6 @@ export class CartService {
         const prod = pv.Products || {};
         const images = prod.ProductImages || [];
         const firstImg = images.length > 0 ? images[0].ImageUrl : '';
-
-        const price = Number(prod.DiscountPrice || prod.Price || ci.UnitPrice || 0);
 
         return {
           Id: ci.Id,
@@ -145,18 +216,75 @@ export class CartService {
           this.cartSignal.set(cart);
         }
       }),
-      catchError(() => of(null))
+      catchError(() => {
+        const guestItems = this.getGuestCartFromStorage();
+        const guestCart = this.buildGuestCartObject(guestItems);
+        this.cartSignal.set(guestCart);
+        return of(guestCart);
+      })
     );
   }
 
   addToCart(dto: AddToCartRequest): Observable<any> {
     const userId = this.getCurrentUserId();
+    const variantId = dto.ProductVariantId || (dto as any).productVariantId;
+    const quantity = Math.max(1, dto.Quantity || (dto as any).quantity || 1);
+
     const run = async () => {
+      // 1. If Guest (Not logged in):
       if (!userId) {
-        throw new Error('Please login to add items to cart');
+        const { data: variant, error: vErr } = await this.supabase.client
+          .from('ProductVariants')
+          .select('*, Products(*, ProductImages(*)), Sizes(*), Colors(*)')
+          .eq('Id', variantId)
+          .single();
+
+        if (vErr || !variant) {
+          throw new Error('Product variant details could not be loaded');
+        }
+
+        const prod = variant.Products || {};
+        const images = prod.ProductImages || [];
+        const firstImg = images.length > 0 ? images[0].ImageUrl : '';
+
+        const guestItems = this.getGuestCartFromStorage();
+        const existingIdx = guestItems.findIndex((i) => i.ProductVariantId === variantId);
+
+        if (existingIdx > -1) {
+          guestItems[existingIdx].Quantity += quantity;
+        } else {
+          const newItem: CartItem = {
+            Id: variantId,
+            CartId: 0,
+            ProductVariantId: variantId,
+            Quantity: quantity,
+            ProductVariant: {
+              Id: variant.Id,
+              StockQuantity: Number(variant.StockQuantity || 10),
+              Size: variant.Sizes || { Id: variant.SizeId, Name: 'Standard' },
+              Color: variant.Colors || { Id: variant.ColorId, Name: 'Standard', HexCode: '#333' },
+              Product: {
+                Id: prod.Id || 0,
+                Name: prod.Name || 'Product',
+                SKU: prod.SKU || '',
+                RegularPrice: Number(prod.Price || 0),
+                DiscountPrice: Number(prod.DiscountPrice || prod.Price || 0),
+                Images: [{ Id: 1, ImageUrl: this.formatImageUrl(firstImg), IsPrimary: true }],
+                CategoryId: prod.CategoryId || 1,
+                IsFeatured: false,
+                IsActive: true,
+              },
+            } as any,
+          };
+          guestItems.push(newItem);
+        }
+
+        this.saveGuestCartToStorage(guestItems);
+        this.cartSignal.set(this.buildGuestCartObject(guestItems));
+        return { success: true };
       }
 
-      // Find or create cart
+      // 2. If Authenticated User:
       let { data: cart } = await this.supabase.client
         .from('Cart')
         .select('Id')
@@ -173,10 +301,7 @@ export class CartService {
         cart = created;
       }
 
-      const variantId = dto.ProductVariantId || (dto as any).productVariantId;
-      const quantity = Math.max(1, dto.Quantity || (dto as any).quantity || 1);
-
-      // Check if item already exists in cart
+      // Check if item already exists in user's cart
       const { data: existing } = await this.supabase.client
         .from('CartItems')
         .select('Id, Quantity')
@@ -194,7 +319,6 @@ export class CartService {
           })
           .eq('Id', existing.Id);
       } else {
-        // Get variant price
         const { data: variant } = await this.supabase.client
           .from('ProductVariants')
           .select('*, Products(Price, DiscountPrice)')
@@ -219,7 +343,9 @@ export class CartService {
 
     return from(run()).pipe(
       tap(() => {
-        this.loadCart().subscribe();
+        if (userId) {
+          this.loadCart().subscribe();
+        }
         this.toggleCartDrawer(true);
         if (this.messageService) {
           this.messageService.add({
@@ -234,7 +360,24 @@ export class CartService {
   }
 
   updateQuantity(cartItemId: number, quantity: number): Observable<any> {
+    const userId = this.getCurrentUserId();
+
     const run = async () => {
+      if (!userId) {
+        let guestItems = this.getGuestCartFromStorage();
+        if (quantity <= 0) {
+          guestItems = guestItems.filter((i) => i.Id !== cartItemId && i.ProductVariantId !== cartItemId);
+        } else {
+          const idx = guestItems.findIndex((i) => i.Id === cartItemId || i.ProductVariantId === cartItemId);
+          if (idx > -1) {
+            guestItems[idx].Quantity = quantity;
+          }
+        }
+        this.saveGuestCartToStorage(guestItems);
+        this.cartSignal.set(this.buildGuestCartObject(guestItems));
+        return { success: true };
+      }
+
       if (quantity <= 0) {
         await this.supabase.client
           .from('CartItems')
@@ -251,20 +394,37 @@ export class CartService {
 
     return from(run()).pipe(
       tap(() => {
-        this.loadCart().subscribe();
+        if (userId) {
+          this.loadCart().subscribe();
+        }
       })
     );
   }
 
   removeItem(cartItemId: number): Observable<any> {
-    return from(
-      this.supabase.client
+    const userId = this.getCurrentUserId();
+
+    const run = async () => {
+      if (!userId) {
+        let guestItems = this.getGuestCartFromStorage();
+        guestItems = guestItems.filter((i) => i.Id !== cartItemId && i.ProductVariantId !== cartItemId);
+        this.saveGuestCartToStorage(guestItems);
+        this.cartSignal.set(this.buildGuestCartObject(guestItems));
+        return { success: true };
+      }
+
+      await this.supabase.client
         .from('CartItems')
         .update({ IsMarkToDelete: true, UpdatedDate: new Date().toISOString() })
-        .eq('Id', cartItemId)
-    ).pipe(
+        .eq('Id', cartItemId);
+      return { success: true };
+    };
+
+    return from(run()).pipe(
       tap(() => {
-        this.loadCart().subscribe();
+        if (userId) {
+          this.loadCart().subscribe();
+        }
         if (this.messageService) {
           this.messageService.add({
             severity: 'info',
@@ -279,6 +439,8 @@ export class CartService {
 
   clearCart(): Observable<any> {
     const userId = this.getCurrentUserId();
+    localStorage.removeItem(GUEST_CART_KEY);
+
     if (!userId) {
       this.cartSignal.set(null);
       return of({ message: 'Cart cleared' });
@@ -312,3 +474,4 @@ export class CartService {
     );
   }
 }
+

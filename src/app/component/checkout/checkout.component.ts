@@ -259,6 +259,7 @@ export class CheckoutComponent implements OnInit {
             PaymentDetails: paymentDetails,
           };
         } else {
+          const cartItems = this.cartService.cartItems();
           orderPayload = {
             ShippingAddressId: shippingAddressId,
             PaymentMethodId: this.selectedPaymentMethodId(),
@@ -266,6 +267,10 @@ export class CheckoutComponent implements OnInit {
             DeliveryCharge: this.deliveryCharge(),
             Discount: 0,
             IsFromCart: true,
+            Items: cartItems.map((ci) => ({
+              ProductVariantId: ci.ProductVariantId,
+              Quantity: ci.Quantity,
+            })),
             PaymentDetails: paymentDetails,
           };
         }

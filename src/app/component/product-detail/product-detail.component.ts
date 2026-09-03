@@ -236,20 +236,6 @@ export class ProductDetailComponent implements OnInit {
       return;
     }
 
-    if (!this.authService.isAuthenticated()) {
-      if (this.messageService) {
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Login Required',
-          detail: 'Please log in to add items to your shopping cart.',
-        });
-      }
-      this.router.navigate(['/auth/login'], {
-        queryParams: { returnUrl: `/product/${this.product()?.Id}` },
-      });
-      return;
-    }
-
     this.addingToCart.set(true);
     this.cartService
       .addToCart({
