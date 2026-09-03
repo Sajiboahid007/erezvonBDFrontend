@@ -1,0 +1,611 @@
+<div class="flex flex-col gap-6">
+  
+  <!-- Header & Actions -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-surface-200 shadow-xs">
+    <div>
+      <h1 class="text-2xl font-extrabold text-surface-900 font-display">Product Catalog Management</h1>
+      <p class="text-xs text-surface-500">Add, edit, manage stock, variants, and image assets for your store items.</p>
+    </div>
+
+    <button 
+      (click)="openNewProductDialog()" 
+      class="px-5 py-2.5 rounded-xl gradient-primary text-white font-bold text-xs shadow-md shadow-primary-600/30 hover:opacity-95 flex items-center gap-2 transition-all"
+    >
+      <i class="pi pi-plus"></i> Add New Product
+    </button>
+  </div>
+
+  <!-- Products Table -->
+  <div class="bg-white rounded-3xl border border-surface-200 shadow-xs overflow-hidden">
+    <p-table 
+      #dt
+      [value]="products()" 
+      [loading]="loading()" 
+      [paginator]="true" 
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 20, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products"
+      [globalFilterFields]="['Name', 'SKU', 'Category.Name', 'Brand']"
+      [rowHover]="true"
+      responsiveLayout="scroll"
+      styleClass="p-datatable-sm p-datatable-hoverable"
+    >
+      <ng-template #caption>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-extrabold text-surface-800 font-display">Inventory Items</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-xs font-bold font-mono">
+              {{ products().length }} total
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <p-iconfield iconPosition="left" class="w-full sm:w-64">
+              <p-inputicon styleClass="pi pi-search text-xs" />
+              <input 
+                pInputText 
+                type="text" 
+                (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                placeholder="Search name, SKU, category..." 
+                class="w-full text-xs p-2 rounded-xl"
+              />
+            </p-iconfield>
+
+            <p-button 
+              icon="pi pi-refresh" 
+              [rounded]="true" 
+              [text]="true" 
+              severity="secondary" 
+              size="small" 
+              (onClick)="loadData()" 
+              pTooltip="Refresh List" 
+              tooltipPosition="top"
+            />
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template #header>
+        <tr class="text-xs text-surface-600 uppercase font-bold border-b border-surface-200">
+          <th pSortableColumn="Name" class="py-3.5 px-4">
+            <div class="flex items-center gap-1.5">
+              Product <p-sortIcon field="Name" />
+            </div>
+          </th>
+          <th pSortableColumn="Category.Name" class="py-3.5 px-4">
+            <div class="flex items-center gap-1.5">
+              Category <p-sortIcon field="Category.Name" />
+            </div>
+          </th>
+          <th pSortableColumn="RegularPrice" class="py-3.5 px-4">
+            <div class="flex items-center gap-1.5">
+              Regular Price <p-sortIcon field="RegularPrice" />
+            </div>
+          </th>
+          <th pSortableColumn="DiscountPrice" class="py-3.5 px-4">
+            <div class="flex items-center gap-1.5">
+              Discount Price <p-sortIcon field="DiscountPrice" />
+            </div>
+          </th>
+          <th class="py-3.5 px-4 text-center">Stock</th>
+          <th class="py-3.5 px-4">Variants</th>
+          <th pSortableColumn="IsFeatured" class="py-3.5 px-4">
+            <div class="flex items-center gap-1.5">
+              Status <p-sortIcon field="IsFeatured" />
+            </div>
+          </th>
+          <th class="py-3.5 px-4 text-center w-28">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-prod>
+        <tr class="text-xs text-surface-800 border-b border-surface-100 hover:bg-surface-50/80 transition-colors">
+          <td class="py-3 px-4">
+            <div class="flex items-center gap-3">
+              @if (prod.Images?.[0]?.ImageUrl) {
+                <img 
+                  [src]="prod.Images?.[0]?.ImageUrl" 
+                  class="w-11 h-12 object-cover rounded-xl border border-surface-200 shadow-2xs shrink-0" 
+                  alt="Product thumbnail" 
+                />
+              } @else {
+                <div class="w-11 h-12 rounded-xl bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-400 shrink-0">
+                  <i class="pi pi-image text-xs"></i>
+                </div>
+              }
+              <div class="flex flex-col min-w-0">
+                <span class="font-bold text-surface-900 line-clamp-1 text-xs">{{ prod.Name }}</span>
+                <span class="text-[10px] text-surface-400 font-mono">SKU: {{ prod.SKU }}</span>
+              </div>
+            </div>
+          </td>
+
+          <td class="py-3 px-4">
+            <span class="px-2.5 py-1 rounded-lg bg-surface-100 font-semibold text-[11px] text-surface-700">
+              {{ prod.Category?.Name || 'General' }}
+            </span>
+          </td>
+
+          <td class="py-3 px-4 font-bold text-surface-900">
+            {{ settingsService.settingsSignal().CurrencySymbol }}{{ prod.RegularPrice }}
+          </td>
+
+          <td class="py-3 px-4">
+            @if (prod.DiscountPrice) {
+              <span class="font-bold text-emerald-600">{{ settingsService.settingsSignal().CurrencySymbol }}{{ prod.DiscountPrice }}</span>
+            } @else {
+              <span class="text-surface-400">-</span>
+            }
+          </td>
+
+          <td class="py-3 px-4 text-center">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-extrabold text-xs font-mono">
+              {{ (prod.TotalStock !== undefined && prod.TotalStock !== null ? prod.TotalStock : (prod.Variants?.[0]?.StockQuantity ?? 0)) }} pcs
+            </span>
+          </td>
+
+          <td class="py-3 px-4">
+            <div class="flex items-center gap-1 flex-wrap max-w-48">
+              @if (prod.Variants && prod.Variants.length > 0) {
+                @for (v of prod.Variants; track v.Id) {
+                  <span 
+                    class="px-1.5 py-0.5 rounded text-[10px] font-bold"
+                    [class.bg-primary-50]="v.StockQuantity > 0"
+                    [class.text-primary-700]="v.StockQuantity > 0"
+                    [class.bg-rose-50]="v.StockQuantity === 0"
+                    [class.text-rose-600]="v.StockQuantity === 0"
+                  >
+                    {{ v.Size?.Name || v.Sizes?.Name || 'S' }}{{ (v.Color?.Name || v.Colors?.Name) ? ' (' + (v.Color?.Name || v.Colors?.Name) + ')' : '' }}: {{ v.StockQuantity }}
+                  </span>
+                }
+              } @else {
+                <span class="text-surface-400 text-[11px]">No variants</span>
+              }
+            </div>
+          </td>
+
+          <td class="py-3 px-4">
+            @if (prod.IsFeatured) {
+              <p-tag value="Featured" severity="warn" icon="pi pi-star-fill" />
+            } @else {
+              <p-tag value="Standard" severity="secondary" />
+            }
+          </td>
+
+          <td class="py-3 px-4 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <p-button 
+                icon="pi pi-pencil" 
+                [rounded]="true" 
+                severity="success" 
+                size="small"
+                (onClick)="openEditProductDialog(prod)" 
+                pTooltip="Edit Product" 
+                tooltipPosition="top"
+              />
+
+              <p-button 
+                icon="pi pi-trash" 
+                [rounded]="true" 
+                severity="danger" 
+                size="small" 
+                (onClick)="deleteProduct(prod)" 
+                pTooltip="Delete Product" 
+                tooltipPosition="top"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" class="text-center py-12 text-surface-400 text-xs">
+            <div class="flex flex-col items-center justify-center gap-2">
+              <i class="pi pi-box text-3xl text-surface-300"></i>
+              <span class="font-semibold text-surface-600">No products found.</span>
+              <p-button 
+                label="Add New Product" 
+                icon="pi pi-plus" 
+                size="small" 
+                severity="primary" 
+                (onClick)="openNewProductDialog()" 
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+</div>
+
+<!-- Product Add / Edit Dialog -->
+<p-dialog 
+  [visible]="productDialogVisible()" 
+  (visibleChange)="productDialogVisible.set($event)"
+  [header]="isEditMode() ? 'Edit Product & Variant Inventory' : 'Add New Product & Variant Inventory'" 
+  [modal]="true" 
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '900px', maxWidth: '95vw' }"
+  [contentStyle]="{ 'max-height': '85vh', 'overflow-y': 'auto', 'padding': '1.25rem' }"
+>
+  @if (productDialogVisible()) {
+    <form [formGroup]="productForm" (ngSubmit)="saveProduct()" class="flex flex-col gap-3 text-xs">
+    
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+      
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Product Name *</label>
+        <input type="text" pInputText formControlName="name" placeholder="e.g. Oxford Slim Fit Cotton Shirt" class="p-2 text-xs rounded-xl" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">SKU Code *</label>
+        <input type="text" pInputText formControlName="sku" placeholder="e.g. SHIRT-001" class="p-2 text-xs rounded-xl" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Brand</label>
+        <input type="text" pInputText formControlName="brand" placeholder="e.g. e-rezvonBD" class="p-2 text-xs rounded-xl" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Category *</label>
+        <p-select 
+          [options]="categories()" 
+          formControlName="categoryId" 
+          optionLabel="Name" 
+          optionValue="Id" 
+          placeholder="Select Category"
+          styleClass="w-full text-xs"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Sub-Category</label>
+        <p-select 
+          [options]="filteredSubCategories()" 
+          formControlName="subCategoryId" 
+          optionLabel="Name" 
+          optionValue="Id" 
+          placeholder="Select SubCategory"
+          styleClass="w-full text-xs"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Fabric</label>
+        <input type="text" pInputText formControlName="fabric" placeholder="e.g. 100% Egyptian Cotton" class="p-2 text-xs rounded-xl" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Regular Price (৳) *</label>
+        <input type="number" pInputText formControlName="regularPrice" placeholder="1500" class="p-2 text-xs rounded-xl" />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="font-bold text-surface-700">Discount Price (৳)</label>
+        <input type="number" pInputText formControlName="discountPrice" placeholder="1250" class="p-2 text-xs rounded-xl" />
+      </div>
+
+      <!-- Compact Product Size & Color Variants Matrix (Tight 8px Gap, No Empty Whitespace) -->
+      <div class="flex flex-col gap-2 sm:col-span-3 p-3 rounded-2xl bg-surface-50 border border-surface-200">
+        <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-surface-200/80">
+          <!-- Suggestion Hint Only -->
+          <div class="flex items-center gap-1.5 text-xs text-surface-600">
+            <i class="pi pi-info-circle text-primary-600 text-xs"></i>
+            <span class="font-medium text-[11px]">Configure stock per size & color (e.g. M - Black = 10, L - Navy = 7, XL = 7)</span>
+          </div>
+
+          <!-- Quick Presets & Add Variant Row -->
+          <div class="flex items-center gap-1.5 flex-nowrap shrink-0">
+            <button 
+              type="button" 
+              (click)="applyPreset('popular')"
+              class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-white hover:bg-surface-100 border border-surface-300 text-surface-800 transition-colors cursor-pointer shadow-2xs flex items-center gap-1 shrink-0"
+              title="Apply M=10, L=7, XL=7"
+            >
+              <i class="pi pi-bolt text-amber-500 text-[10px]"></i>
+              Preset: M=10, L=7, XL=7
+            </button>
+            <button 
+              type="button" 
+              (click)="applyPreset('even')"
+              class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-white hover:bg-surface-100 border border-surface-300 text-surface-800 transition-colors cursor-pointer shadow-2xs shrink-0"
+            >
+              All 10 pcs
+            </button>
+            <button 
+              type="button" 
+              (click)="addVariantRow()"
+              class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-colors cursor-pointer shadow-2xs flex items-center gap-1 shrink-0"
+            >
+              <i class="pi pi-plus text-[10px]"></i>
+              Add Variant Row
+            </button>
+          </div>
+        </div>
+
+        <!-- Variants Grid with Tight 8px Gap -->
+        <div class="flex flex-col gap-1.5">
+          @if (sizeVariants().length === 0) {
+            <div class="p-4 text-center text-surface-400 bg-white rounded-xl border border-dashed border-surface-300 flex flex-col items-center gap-1 text-xs">
+              <i class="pi pi-box text-xl text-surface-300"></i>
+              <span>No variant rows configured yet. Click "Add Variant Row" or choose a preset above.</span>
+            </div>
+          } @else {
+            <!-- Header Row -->
+            <div class="grid grid-cols-12 gap-2 text-[10px] font-extrabold uppercase tracking-wider text-surface-500 px-2 py-1 bg-surface-100/70 rounded-lg">
+              <div class="col-span-1 text-center">Active</div>
+              <div class="col-span-3">Size</div>
+              <div class="col-span-4">Color</div>
+              <div class="col-span-2">Stock (Units)</div>
+              <div class="col-span-1 text-center">Status</div>
+              <div class="col-span-1 text-center">Action</div>
+            </div>
+
+            <!-- Variant Item Rows -->
+            <div class="flex flex-col gap-1">
+              @for (v of sizeVariants(); track (v.tempId || v.sizeId + '-' + v.colorId); let idx = $index) {
+                <div 
+                  class="grid grid-cols-12 gap-2 items-center p-1.5 rounded-xl border transition-all"
+                  [class.bg-white]="v.enabled"
+                  [class.border-surface-200]="v.enabled"
+                  [class.bg-surface-50/70]="!v.enabled"
+                  [class.border-surface-100]="!v.enabled"
+                  [class.opacity-60]="!v.enabled"
+                >
+                  <!-- Enable Checkbox -->
+                  <div class="col-span-1 flex items-center justify-center">
+                    <input 
+                      type="checkbox" 
+                      [checked]="v.enabled" 
+                      (change)="toggleSize(v)"
+                      class="rounded text-primary-600 focus:ring-primary-500 cursor-pointer w-4 h-4"
+                      title="Enable/Disable this variant"
+                    />
+                  </div>
+
+                  <!-- Size Selector -->
+                  <div class="col-span-3">
+                    <select 
+                      [disabled]="!v.enabled"
+                      [value]="v.sizeId"
+                      (change)="onSizeChange(v, $any($event.target).value)"
+                      class="w-full text-xs font-bold py-1 px-2 rounded-lg border border-surface-300 bg-white text-surface-900 disabled:bg-surface-100 cursor-pointer"
+                    >
+                      @for (sz of getAvailableMasterSizes(); track sz.Id) {
+                        <option [value]="sz.Id">Size {{ sz.Name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Color Selector -->
+                  <div class="col-span-4">
+                    <select 
+                      [disabled]="!v.enabled"
+                      [value]="v.colorId"
+                      (change)="onColorChange(v, $any($event.target).value)"
+                      class="w-full text-xs font-medium py-1 px-2 rounded-lg border border-surface-300 bg-white text-surface-900 disabled:bg-surface-100 cursor-pointer"
+                    >
+                      @for (col of getAvailableMasterColors(); track col.Id) {
+                        <option [value]="col.Id">{{ col.Name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Stock Quantity Input -->
+                  <div class="col-span-2 flex items-center gap-1">
+                    <input 
+                      type="number" 
+                      [disabled]="!v.enabled"
+                      [value]="v.stockQuantity"
+                      (input)="onStockChange(v, $event)"
+                      min="0"
+                      placeholder="0"
+                      class="w-full text-xs font-extrabold py-1 px-2 rounded-lg border border-surface-300 text-surface-900 bg-white disabled:bg-surface-100 text-center"
+                    />
+                    <span class="text-[10px] text-surface-400 font-bold shrink-0">pcs</span>
+                  </div>
+
+                  <!-- Live Status Badge -->
+                  <div class="col-span-1 flex items-center justify-center">
+                    @if (!v.enabled) {
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-surface-100 text-surface-500 whitespace-nowrap">
+                        Off
+                      </span>
+                    } @else if (v.stockQuantity <= 0) {
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 text-rose-700 whitespace-nowrap">
+                        Out
+                      </span>
+                    } @else if (v.stockQuantity <= 5) {
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 whitespace-nowrap">
+                        Low ({{ v.stockQuantity }})
+                      </span>
+                    } @else {
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-800 whitespace-nowrap">
+                        In Stock
+                      </span>
+                    }
+                  </div>
+
+                  <!-- Delete Row Button -->
+                  <div class="col-span-1 flex items-center justify-center">
+                    <button 
+                      type="button" 
+                      (click)="removeVariantRow(idx)"
+                      class="w-6 h-6 rounded text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors flex items-center justify-center cursor-pointer border-0 bg-transparent"
+                      title="Remove variant row"
+                    >
+                      <i class="pi pi-trash text-[11px]"></i>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Live Inventory Summary Footer -->
+        <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-surface-200/80 text-xs">
+          <div class="text-[11px] text-surface-600 flex items-center gap-1 truncate">
+            <span class="font-bold text-surface-700 shrink-0">Configured:</span> 
+            <span class="text-surface-900 truncate">
+              {{ getActiveSizesSummary() || 'None enabled' }}
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-[11px] text-surface-600 font-bold">Total Stock:</span>
+            <span class="px-2.5 py-0.5 rounded-full font-extrabold text-xs bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+              {{ totalVariantStock() }} Units Total
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-Photo Gallery & Direct Upload (No URL Section) -->
+      <div class="flex flex-col gap-2 sm:col-span-3 p-3 rounded-2xl bg-surface-50 border border-surface-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <i class="pi pi-images text-primary-600 text-xs"></i>
+            <span class="font-bold text-xs text-surface-900">Product Photos (Select 3-4 gallery photos)</span>
+          </div>
+
+          @if (uploadedPhotos().length > 0) {
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 text-primary-700">
+                {{ uploadedPhotos().length }} photo{{ uploadedPhotos().length > 1 ? 's' : '' }}
+              </span>
+              <button 
+                type="button" 
+                (click)="clearAllPhotos()" 
+                class="text-red-500 hover:text-red-700 font-bold text-[10px] transition-colors cursor-pointer border-0 bg-transparent"
+              >
+                Clear all
+              </button>
+            </div>
+          }
+        </div>
+
+        <input 
+          type="file" 
+          #fileInput 
+          multiple 
+          (change)="onFilesSelected($event)" 
+          accept="image/png, image/jpeg, image/jpg, image/webp, image/gif" 
+          style="display: none;" 
+        />
+
+        @if (uploadedPhotos().length === 0) {
+          <div 
+            (click)="fileInput.click()" 
+            (dragover)="onDragOver($event)" 
+            (drop)="onFileDropped($event)"
+            class="border-2 border-dashed border-primary-200 hover:border-primary-500 bg-white hover:bg-primary-50/40 rounded-xl p-3 text-center cursor-pointer transition-all flex items-center justify-center gap-3"
+          >
+            <div class="w-7 h-7 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center text-sm shrink-0">
+              <i class="pi pi-cloud-upload"></i>
+            </div>
+            <div class="text-left">
+              <p class="font-bold text-xs text-surface-800">
+                <span class="text-primary-600 hover:underline">Click to browse 3-4 photos</span> or drag & drop files here
+              </p>
+              <p class="text-[10px] text-surface-400">PNG, JPG, JPEG, or WEBP files supported</p>
+            </div>
+          </div>
+        } @else {
+          <div class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+            @for (photo of uploadedPhotos(); track $index) {
+              <div class="relative group rounded-xl overflow-hidden border-2 bg-white shadow-2xs transition-all flex flex-col"
+                   [class.border-amber-400]="photo.isPrimary"
+                   [class.border-surface-200]="!photo.isPrimary">
+                
+                <!-- Thumbnail Image -->
+                <div class="relative aspect-square w-full bg-surface-100 overflow-hidden">
+                  <img [src]="photo.previewUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Product photo" />
+
+                  <!-- Primary Badge -->
+                  @if (photo.isPrimary) {
+                    <div class="absolute top-1 left-1 bg-amber-500 text-white text-[8px] font-black px-1 py-0.5 rounded shadow-sm flex items-center gap-0.5">
+                      <i class="pi pi-star-fill text-[7px]"></i> Primary
+                    </div>
+                  }
+
+                  <!-- Action Buttons on Hover -->
+                  <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1">
+                    @if (!photo.isPrimary) {
+                      <button 
+                        type="button" 
+                        (click)="setPrimaryPhoto($index)" 
+                        class="p-1 bg-white text-surface-900 rounded text-[9px] font-bold shadow-sm hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                        title="Set as Main Cover"
+                      >
+                        <i class="pi pi-star"></i>
+                      </button>
+                    }
+                    <button 
+                      type="button" 
+                      (click)="removePhoto($index)" 
+                      class="p-1 bg-red-600 text-white rounded text-[9px] font-bold shadow-sm hover:bg-red-700 transition-colors"
+                      title="Delete photo"
+                    >
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Add More Button in Grid -->
+            <div 
+              (click)="fileInput.click()"
+              (dragover)="onDragOver($event)" 
+              (drop)="onFileDropped($event)"
+              class="border-2 border-dashed border-primary-300 hover:border-primary-600 hover:bg-primary-50/50 bg-white rounded-xl flex flex-col items-center justify-center p-1 text-center cursor-pointer transition-all aspect-square min-h-[70px]"
+            >
+              <i class="pi pi-plus-circle text-base text-primary-600 mb-0.5"></i>
+              <span class="font-bold text-[10px] text-surface-800">Add More</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1 sm:col-span-3">
+        <label class="font-bold text-surface-700">Product Description</label>
+        <textarea pTextarea formControlName="description" rows="2" placeholder="Detailed product specifications..." class="p-2 text-xs rounded-xl"></textarea>
+      </div>
+
+      <div class="flex items-center gap-2 sm:col-span-3">
+        <input type="checkbox" formControlName="isFeatured" id="isFeatured" class="rounded text-primary-600 cursor-pointer" />
+        <label for="isFeatured" class="font-bold text-surface-700 cursor-pointer text-xs">Feature this product on homepage carousel</label>
+      </div>
+
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2.5 border-t border-surface-200">
+      <p-button 
+        type="button" 
+        label="Cancel" 
+        severity="secondary" 
+        [outlined]="true" 
+        size="small" 
+        (onClick)="productDialogVisible.set(false)" 
+      />
+      <p-button 
+        type="submit" 
+        [label]="isUploading() ? 'Uploading & Saving...' : (isEditMode() ? 'Save Changes' : 'Create Product')" 
+        [loading]="isUploading()"
+        [disabled]="isUploading()"
+        severity="success" 
+        size="small" 
+        icon="pi pi-check" 
+      />
+    </div>
+
+    </form>
+  }
+</p-dialog>

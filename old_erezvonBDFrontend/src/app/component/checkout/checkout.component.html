@@ -1,0 +1,275 @@
+<div class="bg-surface-50 py-10">
+  <div class="container flex flex-col gap-8">
+    
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white">
+        <i class="pi pi-credit-card text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-surface-900 font-display">Checkout & Shipping</h1>
+        <p class="text-xs text-surface-500">Complete your shipping address and choose your payment method.</p>
+      </div>
+    </div>
+
+    <form [formGroup]="checkoutForm" (ngSubmit)="placeOrder()" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Column: Address & Payment Method (7 Cols) -->
+      <div class="lg:col-span-7 flex flex-col gap-6">
+        
+        <!-- Step 1: Customer & Delivery Address Card -->
+        <div class="bg-white p-6 rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-4">
+          <div class="flex items-center gap-2 border-b border-surface-100 pb-3">
+            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold text-xs flex items-center justify-center">1</span>
+            <h2 class="font-bold text-base text-surface-900 font-display">Shipping Information</h2>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label class="text-xs font-bold text-surface-700">Full Name *</label>
+              <input type="text" pInputText formControlName="name" placeholder="Recipient's Name" class="w-full text-xs p-3 rounded-xl" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-bold text-surface-700">Phone Number *</label>
+              <input type="text" pInputText formControlName="phone" placeholder="017XXXXXXXX" class="w-full text-xs p-3 rounded-xl" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-bold text-surface-700">Email Address (Optional)</label>
+              <input type="email" pInputText formControlName="email" placeholder="example@domain.com" class="w-full text-xs p-3 rounded-xl" />
+            </div>
+
+            <div class="flex flex-col gap-1 sm:col-span-2">
+              <label class="text-xs font-bold text-surface-700">Street Address / House / Road *</label>
+              <input type="text" pInputText formControlName="street" placeholder="House 12, Road 4, Sector 7" class="w-full text-xs p-3 rounded-xl" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-bold text-surface-700">Thana / Police Station *</label>
+              <input type="text" pInputText formControlName="thana" placeholder="Uttara" class="w-full text-xs p-3 rounded-xl" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-bold text-surface-700">District *</label>
+              <input type="text" pInputText formControlName="district" placeholder="Dhaka" class="w-full text-xs p-3 rounded-xl" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-bold text-surface-700">City *</label>
+              <input type="text" pInputText formControlName="city" placeholder="Dhaka" class="w-full text-xs p-3 rounded-xl" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-bold text-surface-700">Postal Code</label>
+              <input type="text" pInputText formControlName="postalCode" placeholder="1230" class="w-full text-xs p-3 rounded-xl" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Delivery Area Zone Selection -->
+        <div class="bg-white p-6 rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-4">
+          <div class="flex items-center gap-2 border-b border-surface-100 pb-3">
+            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold text-xs flex items-center justify-center">2</span>
+            <h2 class="font-bold text-base text-surface-900 font-display">Delivery Destination</h2>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div 
+              (click)="isInsideDhaka.set(true)"
+              [class.border-primary-600]="isInsideDhaka()"
+              [class.bg-primary-50]="isInsideDhaka()"
+              class="p-4 rounded-2xl border-2 border-surface-200 cursor-pointer flex items-center justify-between transition-all"
+            >
+              <div>
+                <div class="font-bold text-sm text-surface-900">Inside Dhaka</div>
+                <div class="text-xs text-surface-500">Delivered within 24-48 hours</div>
+              </div>
+              <span class="font-extrabold text-primary-700 text-sm">৳{{ settingsService.settingsSignal().InsideDhakaDeliveryCharge }}</span>
+            </div>
+
+            <div 
+              (click)="isInsideDhaka.set(false)"
+              [class.border-primary-600]="!isInsideDhaka()"
+              [class.bg-primary-50]="!isInsideDhaka()"
+              class="p-4 rounded-2xl border-2 border-surface-200 cursor-pointer flex items-center justify-between transition-all"
+            >
+              <div>
+                <div class="font-bold text-sm text-surface-900">Outside Dhaka</div>
+                <div class="text-xs text-surface-500">Delivered within 3-5 days</div>
+              </div>
+              <span class="font-extrabold text-primary-700 text-sm">৳{{ settingsService.settingsSignal().OutsideDhakaDeliveryCharge }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Payment Method Selection -->
+        <div class="bg-white p-6 rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-4">
+          <div class="flex items-center gap-2 border-b border-surface-100 pb-3">
+            <span class="w-6 h-6 rounded-full bg-primary-600 text-white font-bold text-xs flex items-center justify-center">3</span>
+            <h2 class="font-bold text-base text-surface-900 font-display">Payment Method</h2>
+          </div>
+
+          <div class="flex flex-col gap-3">
+            @for (method of paymentMethods(); track method.Id) {
+              <div 
+                (click)="selectPaymentMethod(method.Id)"
+                [class.border-primary-600]="selectedPaymentMethodId() === method.Id"
+                [class.bg-primary-50/50]="selectedPaymentMethodId() === method.Id"
+                class="p-4 rounded-2xl border-2 border-surface-200 cursor-pointer flex flex-col gap-2 transition-all"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <input 
+                      type="radio" 
+                      [checked]="selectedPaymentMethodId() === method.Id" 
+                      class="text-primary-600 focus:ring-primary-500" 
+                    />
+                    <span class="font-bold text-sm text-surface-900">{{ method.Name }}</span>
+                  </div>
+                  <span class="text-xs font-semibold text-surface-500">{{ method.Code }}</span>
+                </div>
+
+                @if (selectedPaymentMethodId() === method.Id && method.Code !== 'COD') {
+                  <div class="mt-2 p-3 bg-white rounded-xl border border-surface-200 flex flex-col gap-3 text-xs">
+                    <p class="text-surface-600">
+                      Please send payment to <strong>{{ method.AccountNumber || '01700-000000' }}</strong> and enter the transaction details below:
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div class="flex flex-col gap-1">
+                        <label class="font-bold text-surface-700">Sender Phone Number</label>
+                        <input type="text" pInputText formControlName="senderNumber" placeholder="01XXXXXXXXX" class="p-2 text-xs rounded-lg" />
+                      </div>
+                      <div class="flex flex-col gap-1">
+                        <label class="font-bold text-surface-700">Transaction ID (TrxID)</label>
+                        <input type="text" pInputText formControlName="transactionId" placeholder="e.g. 9J829AK" class="p-2 text-xs rounded-lg" />
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Order Notes -->
+          <div class="flex flex-col gap-1 mt-2">
+            <label class="text-xs font-bold text-surface-700">Order Notes / Instructions (Optional)</label>
+            <input type="text" pInputText formControlName="notes" placeholder="Special delivery instructions or gate code..." class="w-full text-xs p-3 rounded-xl" />
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Order Review & Submit (5 Cols) -->
+      <div class="lg:col-span-5 flex flex-col gap-6">
+        <div class="bg-white p-6 rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-5 sticky top-24">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-surface-900 font-display">
+              Order Items ({{ totalItemCount() }})
+            </h2>
+            @if (isDirectBuy()) {
+              <span class="text-[10px] font-bold uppercase tracking-wider bg-primary-50 text-primary-700 px-2 py-0.5 rounded">
+                Direct Buy
+              </span>
+            }
+          </div>
+
+          <!-- Items list (Direct Buy Item vs Cart Items) -->
+          <div class="flex flex-col gap-3 max-h-72 overflow-y-auto divide-y divide-surface-100 pr-1">
+            @if (isDirectBuy() && directBuyItem()) {
+              <!-- Direct Buy Item View -->
+              <div class="flex items-center gap-3 pt-3 first:pt-0">
+                @if (directBuyItem()?.imageUrl) {
+                  <img 
+                    [src]="directBuyItem()?.imageUrl" 
+                    class="w-12 h-14 object-cover rounded-xl border border-surface-200 shrink-0 bg-white" 
+                    alt="Direct Item" 
+                  />
+                } @else {
+                  <div class="w-12 h-14 rounded-xl bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-400 shrink-0">
+                    <i class="pi pi-image text-xs"></i>
+                  </div>
+                }
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-xs font-bold text-surface-900 truncate">{{ directBuyItem()?.productName }}</h4>
+                  <div class="text-[11px] text-surface-500">
+                    Qty: {{ directBuyItem()?.quantity }} &bull; Size: {{ directBuyItem()?.sizeName }}
+                    @if (directBuyItem()?.colorName) {
+                      &bull; Color: {{ directBuyItem()?.colorName }}
+                    }
+                  </div>
+                </div>
+                <div class="text-xs font-bold text-surface-900">
+                  {{ settingsService.settingsSignal().CurrencySymbol }}{{ directBuyItem()?.totalPrice }}
+                </div>
+              </div>
+            } @else {
+              <!-- Cart Items View -->
+              @for (item of cartService.cartItems(); track item.Id) {
+                <div class="flex items-center gap-3 pt-3 first:pt-0">
+                  @if (item.ProductVariant?.Product?.Images?.[0]?.ImageUrl) {
+                    <img 
+                      [src]="item.ProductVariant?.Product?.Images?.[0]?.ImageUrl" 
+                      class="w-12 h-14 object-cover rounded-xl border border-surface-200 shrink-0 bg-white" 
+                      alt="Item" 
+                    />
+                  } @else {
+                    <div class="w-12 h-14 rounded-xl bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-400 shrink-0">
+                      <i class="pi pi-image text-xs"></i>
+                    </div>
+                  }
+                  <div class="flex-1 min-w-0">
+                    <h4 class="text-xs font-bold text-surface-900 truncate">{{ item.ProductVariant?.Product?.Name }}</h4>
+                    <div class="text-[11px] text-surface-500">
+                      Qty: {{ item.Quantity }} &bull; Size: {{ item.ProductVariant?.Size?.Name || item.ProductVariant?.Sizes?.Name || '-' }}
+                    </div>
+                  </div>
+                  <div class="text-xs font-bold text-surface-900">
+                    {{ settingsService.settingsSignal().CurrencySymbol }}{{ ((item.ProductVariant?.Product?.DiscountPrice || item.ProductVariant?.Product?.RegularPrice || 0) + (item.ProductVariant?.AdditionalPrice || 0)) * item.Quantity }}
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Totals Breakdown -->
+          <div class="flex flex-col gap-2.5 border-t border-surface-200 pt-4 text-xs">
+            <div class="flex justify-between text-surface-600">
+              <span>Subtotal</span>
+              <span class="font-bold text-surface-900">{{ settingsService.settingsSignal().CurrencySymbol }}{{ subTotal() | number }}</span>
+            </div>
+            <div class="flex justify-between text-surface-600">
+              <span>Delivery Charge</span>
+              <span class="font-bold" [class.text-emerald-600]="deliveryCharge() === 0">
+                {{ deliveryCharge() === 0 ? 'FREE' : settingsService.settingsSignal().CurrencySymbol + deliveryCharge() }}
+              </span>
+            </div>
+            <div class="border-t border-surface-200 pt-3 flex justify-between items-baseline">
+              <span class="text-sm font-extrabold text-surface-900">Grand Total</span>
+              <span class="text-2xl font-extrabold text-primary-700 font-display">
+                {{ settingsService.settingsSignal().CurrencySymbol }}{{ grandTotal() | number }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Submit Order CTA -->
+          <button 
+            type="submit" 
+            [disabled]="submitting() || (!isDirectBuy() && cartService.cartItems().length === 0)"
+            class="w-full py-4 rounded-2xl gradient-primary text-white font-bold text-sm shadow-xl shadow-primary-600/30 hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          >
+            @if (submitting()) {
+              <i class="pi pi-spin pi-spinner"></i> Placing Order...
+            } @else {
+              <i class="pi pi-check-circle"></i> Place Order Now
+            }
+          </button>
+
+          <p class="text-[11px] text-surface-400 text-center">
+            By placing your order, you agree to our Terms of Service and Return Policy.
+          </p>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
