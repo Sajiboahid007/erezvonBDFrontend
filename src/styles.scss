@@ -104,6 +104,12 @@ img {
   }
 }
 
+/* Display Utilities */
+.block { display: block; }
+.inline-block { display: inline-block; }
+.inline { display: inline; }
+.hidden { display: none !important; }
+
 /* Flexbox Layouts */
 .flex { display: flex; }
 .inline-flex { display: inline-flex; }
@@ -764,6 +770,10 @@ img {
 }
 
 /* Responsive Media Queries */
+@media (max-width: 639px) {
+  .sm\:hidden { display: none !important; }
+}
+
 @media (min-width: 640px) {
   .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sm\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -773,12 +783,15 @@ img {
   .sm\:col-span-4 { grid-column: span 4 / span 4; }
   .sm\:col-span-5 { grid-column: span 5 / span 5; }
   .sm\:col-span-12 { grid-column: span 12 / span 12; }
+  .sm\:flex { display: flex !important; }
+  .sm\:inline-flex { display: inline-flex !important; }
+  .sm\:block { display: block !important; }
+  .sm\:inline { display: inline !important; }
   .sm\:flex-row { flex-direction: row; }
   .sm\:items-center { align-items: center; }
   .sm\:items-end { align-items: flex-end; }
   .sm\:justify-end { justify-content: flex-end; }
   .sm\:justify-between { justify-content: space-between; }
-  .sm\:inline { display: inline; }
   .sm\:p-6 { padding: 1.5rem; }
   .sm\:p-8 { padding: 2rem; }
   .sm\:p-10 { padding: 2.5rem; }
@@ -793,9 +806,11 @@ img {
   .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .md\:flex { display: flex; }
-  .md\:block { display: block; }
-  .md\:hidden { display: none; }
+  .md\:flex { display: flex !important; }
+  .md\:inline-flex { display: inline-flex !important; }
+  .md\:block { display: block !important; }
+  .md\:inline { display: inline !important; }
+  .md\:hidden { display: none !important; }
   .md\:flex-row { flex-direction: row; }
 }
 
@@ -813,9 +828,11 @@ img {
   .lg\:col-span-8 { grid-column: span 8 / span 8; }
   .lg\:col-span-9 { grid-column: span 9 / span 9; }
   .lg\:col-span-12 { grid-column: span 12 / span 12; }
-  .lg\:flex { display: flex; }
-  .lg\:block { display: block; }
-  .lg\:hidden { display: none; }
+  .lg\:flex { display: flex !important; }
+  .lg\:inline-flex { display: inline-flex !important; }
+  .lg\:block { display: block !important; }
+  .lg\:inline { display: inline !important; }
+  .lg\:hidden { display: none !important; }
   .lg\:py-28 { padding-top: 7rem; padding-bottom: 7rem; }
   .lg\:text-6xl { font-size: 3.75rem; }
 }

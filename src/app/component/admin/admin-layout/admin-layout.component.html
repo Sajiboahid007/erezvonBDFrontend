@@ -1,10 +1,10 @@
 <div class="flex h-screen bg-surface-100 overflow-hidden font-sans text-surface-800">
   
-  <!-- Sidebar -->
+  <!-- Desktop Sidebar (Hidden on Mobile) -->
   <aside 
     [class.w-64]="sidebarOpen()" 
     [class.w-20]="!sidebarOpen()" 
-    class="bg-surface-900 text-white flex flex-col justify-between transition-all duration-300 shadow-xl z-30 shrink-0"
+    class="hidden md:flex bg-surface-900 text-white flex-col justify-between transition-all duration-300 shadow-xl z-30 shrink-0"
   >
     <div class="flex flex-col">
       
@@ -115,30 +115,153 @@
   <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
     
     <!-- Top Bar -->
-    <header class="h-16 bg-white border-b border-surface-200 flex items-center justify-between px-6 shrink-0">
-      <div class="flex items-center gap-3">
-        <span class="text-xs font-bold uppercase tracking-wider text-surface-400">Admin Control Panel</span>
+    <header class="h-14 sm:h-16 bg-white border-b border-surface-200 flex items-center justify-between px-3 sm:px-6 shrink-0">
+      
+      <!-- Left: Mobile Menu Trigger + Brand Badge -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button 
+          (click)="mobileSidebarOpen.set(true)"
+          class="md:hidden p-2 -ml-1 rounded-xl text-surface-700 hover:bg-surface-100 hover:text-primary-600 transition-colors"
+          aria-label="Open Admin Menu"
+        >
+          <i class="pi pi-bars text-lg"></i>
+        </button>
+
+        <div class="flex items-center gap-1.5">
+          <div class="md:hidden w-6 h-6 rounded-lg gradient-primary flex items-center justify-center text-white text-xs">
+            <i class="pi pi-shield"></i>
+          </div>
+          <span class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-surface-800">
+            Admin <span class="hidden sm:inline text-surface-400 font-bold">Control Panel</span>
+          </span>
+        </div>
       </div>
 
-      <div class="flex items-center gap-4">
-        <a routerLink="/" class="text-xs font-bold text-primary-600 hover:text-primary-800 flex items-center gap-1.5">
-          <i class="pi pi-home"></i> View Live Store
+      <!-- Right: Store Link + Avatar -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        <a 
+          routerLink="/" 
+          class="text-xs font-bold text-primary-600 hover:text-primary-800 flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+        >
+          <i class="pi pi-external-link text-xs"></i>
+          <span class="hidden sm:inline">View Live Store</span>
         </a>
 
-        <div class="flex items-center gap-2 pl-3 border-l border-surface-200">
-          <div class="w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-xs">
+        <div class="flex items-center gap-2 pl-2 sm:pl-3 border-l border-surface-200">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-xs">
             A
           </div>
-          <span class="text-xs font-bold text-surface-800">Administrator</span>
+          <span class="hidden sm:inline text-xs font-bold text-surface-800">Administrator</span>
         </div>
       </div>
     </header>
 
-    <!-- Scrollable Main View -->
-    <main class="flex-1 overflow-y-auto p-6">
+    <!-- Scrollable Main View (full width on mobile) -->
+    <main class="flex-1 overflow-y-auto p-3 sm:p-6 bg-surface-50">
       <router-outlet />
     </main>
 
   </div>
 
 </div>
+
+<!-- Mobile Admin Navigation Drawer -->
+<p-drawer [visible]="mobileSidebarOpen()" (visibleChange)="mobileSidebarOpen.set($event)" position="left" styleClass="w-72 bg-surface-900 text-white">
+  <ng-template #header>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
+        <i class="pi pi-shield text-base"></i>
+      </div>
+      <span class="font-extrabold text-base tracking-tight font-display text-white">
+        e-rezvon<span class="text-primary-400">Admin</span>
+      </span>
+    </div>
+  </ng-template>
+
+  <div class="flex flex-col justify-between h-full py-2">
+    <!-- Navigation Links -->
+    <nav class="flex flex-col gap-1.5 text-xs font-semibold">
+      
+      <a 
+        routerLink="/admin/dashboard" 
+        (click)="mobileSidebarOpen.set(false)"
+        routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+      >
+        <i class="pi pi-chart-line text-base"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <a 
+        routerLink="/admin/products" 
+        (click)="mobileSidebarOpen.set(false)"
+        routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+      >
+        <i class="pi pi-box text-base"></i>
+        <span>Products & Inventory</span>
+      </a>
+
+      <a 
+        routerLink="/admin/orders" 
+        (click)="mobileSidebarOpen.set(false)"
+        routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+      >
+        <i class="pi pi-receipt text-base"></i>
+        <span>Customer Orders</span>
+      </a>
+
+      <a 
+        routerLink="/admin/delivery-history" 
+        (click)="mobileSidebarOpen.set(false)"
+        routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+      >
+        <i class="pi pi-check-circle text-base"></i>
+        <span>Delivery History</span>
+      </a>
+
+      <a 
+        routerLink="/admin/attributes" 
+        (click)="mobileSidebarOpen.set(false)"
+        routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+      >
+        <i class="pi pi-tags text-base"></i>
+        <span>Store Attributes</span>
+      </a>
+
+      <a 
+        routerLink="/admin/settings" 
+        (click)="mobileSidebarOpen.set(false)"
+        routerLinkActive="bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold" 
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 transition-all"
+      >
+        <i class="pi pi-cog text-base"></i>
+        <span>Store Settings</span>
+      </a>
+
+    </nav>
+
+    <!-- Bottom Actions -->
+    <div class="pt-4 border-t border-surface-800 flex flex-col gap-2">
+      <a 
+        routerLink="/" 
+        (click)="mobileSidebarOpen.set(false)"
+        class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-800 text-surface-300 text-xs font-semibold transition-colors"
+      >
+        <i class="pi pi-external-link text-sm"></i>
+        <span>Visit Storefront</span>
+      </a>
+
+      <button 
+        (click)="logout(); mobileSidebarOpen.set(false)" 
+        class="flex items-center gap-3 p-3 rounded-xl text-rose-400 hover:bg-rose-950/40 hover:text-rose-300 text-xs font-semibold transition-colors text-left"
+      >
+        <i class="pi pi-sign-out text-sm"></i>
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </div>
+</p-drawer>

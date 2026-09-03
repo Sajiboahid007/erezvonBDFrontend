@@ -1,13 +1,13 @@
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-4 sm:gap-6">
   
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-surface-200 shadow-xs">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs">
     <div>
-      <h1 class="text-2xl font-extrabold text-surface-900 font-display">Customer Orders Management</h1>
-      <p class="text-xs text-surface-500">Monitor order lifecycle, update status milestones, and assign courier tracking numbers.</p>
+      <h1 class="text-lg sm:text-2xl font-extrabold text-surface-900 font-display">Customer Orders Management</h1>
+      <p class="text-[11px] sm:text-xs text-surface-500">Monitor order lifecycle, update status milestones, and assign courier tracking numbers.</p>
     </div>
 
-    <button (click)="loadOrders()" class="px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-200 text-surface-800 font-bold text-xs flex items-center gap-2">
+    <button (click)="loadOrders()" class="w-full sm:w-auto justify-center px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-200 text-surface-800 font-bold text-xs flex items-center gap-2 transition-colors shrink-0">
       <i class="pi pi-refresh text-xs"></i> Refresh
     </button>
   </div>

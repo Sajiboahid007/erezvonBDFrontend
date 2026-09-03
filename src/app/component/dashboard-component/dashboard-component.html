@@ -1,164 +1,176 @@
-<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-4 sm:gap-6">
   
   <!-- Dashboard Header -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-surface-200 shadow-xs">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs">
     <div>
-      <h1 class="text-2xl font-extrabold text-surface-900 font-display">Store Overview & Analytics</h1>
-      <p class="text-xs text-surface-500">Live operational metrics, sales performance, and inventory health.</p>
+      <h1 class="text-lg sm:text-2xl font-extrabold text-surface-900 font-display">Store Overview & Analytics</h1>
+      <p class="text-[11px] sm:text-xs text-surface-500">Live operational metrics, sales performance, and inventory health.</p>
     </div>
     <button 
       (click)="loadDashboardData()" 
-      class="px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-200 text-surface-800 font-bold text-xs flex items-center gap-2 transition-colors"
+      class="w-full sm:w-auto justify-center px-4 py-2 rounded-xl bg-surface-100 hover:bg-surface-200 text-surface-800 font-bold text-xs flex items-center gap-2 transition-colors active:bg-surface-300"
     >
       <i class="pi pi-refresh text-xs"></i> Refresh Data
     </button>
   </div>
 
-  <!-- 4 KPI Summary Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+  <!-- 4 KPI Summary Cards (2 Columns on Mobile, 4 on Desktop) -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5">
     
     <!-- Total Revenue -->
-    <div class="bg-white p-5 rounded-3xl border border-surface-200 shadow-xs flex items-center justify-between">
-      <div class="flex flex-col gap-1">
-        <span class="text-xs font-bold text-surface-500 uppercase tracking-wider">Total Revenue</span>
-        <span class="text-2xl font-extrabold text-surface-900 font-display">
-          {{ settingsService.settingsSignal().CurrencySymbol }}{{ summary().totalRevenue | number }}
-        </span>
-        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-          <i class="pi pi-arrow-up-right"></i> +{{ summary().monthlyRevenueGrowth || 12 }}% this month
-        </span>
+    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs flex flex-col justify-between gap-2.5">
+      <div class="flex items-start justify-between gap-1">
+        <span class="text-[10px] sm:text-xs font-bold text-surface-400 uppercase tracking-wider">Total Revenue</span>
+        <div class="w-7 h-7 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xs sm:text-lg shrink-0">
+          <i class="pi pi-wallet"></i>
+        </div>
       </div>
-      <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
-        <i class="pi pi-wallet"></i>
+      <div>
+        <div class="text-base sm:text-2xl font-extrabold text-surface-900 font-display truncate">
+          {{ settingsService.settingsSignal().CurrencySymbol }}{{ summary().totalRevenue | number }}
+        </div>
+        <span class="text-[9.5px] sm:text-[11px] font-bold text-emerald-600 flex items-center gap-0.5 mt-0.5">
+          <i class="pi pi-arrow-up-right text-[9px]"></i> +{{ summary().monthlyRevenueGrowth || 12 }}%
+        </span>
       </div>
     </div>
 
     <!-- Total Orders -->
-    <div class="bg-white p-5 rounded-3xl border border-surface-200 shadow-xs flex items-center justify-between">
-      <div class="flex flex-col gap-1">
-        <span class="text-xs font-bold text-surface-500 uppercase tracking-wider">Total Orders</span>
-        <span class="text-2xl font-extrabold text-surface-900 font-display">
-          {{ summary().totalOrders }}
-        </span>
-        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-          <i class="pi pi-arrow-up-right"></i> +{{ summary().orderGrowth || 8 }}% volume
-        </span>
+    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs flex flex-col justify-between gap-2.5">
+      <div class="flex items-start justify-between gap-1">
+        <span class="text-[10px] sm:text-xs font-bold text-surface-400 uppercase tracking-wider">Total Orders</span>
+        <div class="w-7 h-7 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs sm:text-lg shrink-0">
+          <i class="pi pi-shopping-bag"></i>
+        </div>
       </div>
-      <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
-        <i class="pi pi-shopping-bag"></i>
+      <div>
+        <div class="text-base sm:text-2xl font-extrabold text-surface-900 font-display">
+          {{ summary().totalOrders }}
+        </div>
+        <span class="text-[9.5px] sm:text-[11px] font-bold text-emerald-600 flex items-center gap-0.5 mt-0.5">
+          <i class="pi pi-arrow-up-right text-[9px]"></i> +{{ summary().orderGrowth || 8 }}% vol
+        </span>
       </div>
     </div>
 
     <!-- Pending Orders -->
-    <div class="bg-white p-5 rounded-3xl border border-surface-200 shadow-xs flex items-center justify-between">
-      <div class="flex flex-col gap-1">
-        <span class="text-xs font-bold text-surface-500 uppercase tracking-wider">Pending Orders</span>
-        <span class="text-2xl font-extrabold text-amber-600 font-display">
-          {{ summary().pendingOrders }}
-        </span>
-        <span class="text-[11px] font-medium text-surface-500">Requires processing</span>
+    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs flex flex-col justify-between gap-2.5">
+      <div class="flex items-start justify-between gap-1">
+        <span class="text-[10px] sm:text-xs font-bold text-surface-400 uppercase tracking-wider">Pending Orders</span>
+        <div class="w-7 h-7 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs sm:text-lg shrink-0">
+          <i class="pi pi-clock"></i>
+        </div>
       </div>
-      <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
-        <i class="pi pi-clock"></i>
+      <div>
+        <div class="text-base sm:text-2xl font-extrabold text-amber-600 font-display">
+          {{ summary().pendingOrders }}
+        </div>
+        <span class="text-[9.5px] sm:text-[11px] font-medium text-surface-500 mt-0.5 block truncate">Processing</span>
       </div>
     </div>
 
     <!-- Low Stock Alert -->
-    <div class="bg-white p-5 rounded-3xl border border-surface-200 shadow-xs flex items-center justify-between">
-      <div class="flex flex-col gap-1">
-        <span class="text-xs font-bold text-surface-500 uppercase tracking-wider">Low Stock Variants</span>
-        <span class="text-2xl font-extrabold text-rose-600 font-display">
-          {{ summary().lowStockCount }}
-        </span>
-        <span class="text-[11px] font-bold text-rose-600">Restock needed</span>
+    <div class="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs flex flex-col justify-between gap-2.5">
+      <div class="flex items-start justify-between gap-1">
+        <span class="text-[10px] sm:text-xs font-bold text-surface-400 uppercase tracking-wider">Low Stock</span>
+        <div class="w-7 h-7 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xs sm:text-lg shrink-0">
+          <i class="pi pi-exclamation-triangle"></i>
+        </div>
       </div>
-      <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl">
-        <i class="pi pi-exclamation-triangle"></i>
+      <div>
+        <div class="text-base sm:text-2xl font-extrabold text-rose-600 font-display">
+          {{ summary().lowStockCount }}
+        </div>
+        <span class="text-[9.5px] sm:text-[11px] font-bold text-rose-600 mt-0.5 block truncate">Restock</span>
       </div>
     </div>
 
   </div>
 
   <!-- Sales Chart -->
-  <div class="bg-white p-6 rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-4">
+  <div class="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-4">
     <div class="flex items-center justify-between">
       <div>
-        <h3 class="font-bold text-base text-surface-900 font-display">Sales & Revenue Trend</h3>
-        <p class="text-xs text-surface-500">Weekly breakdown of orders volume and gross sales.</p>
+        <h3 class="font-bold text-sm sm:text-base text-surface-900 font-display">Sales & Revenue Trend</h3>
+        <p class="text-[11px] sm:text-xs text-surface-500">Weekly breakdown of orders volume and gross sales.</p>
       </div>
     </div>
-    <div class="h-72">
+    <div class="h-64 sm:h-72">
       @if (chartData) {
-        <p-chart type="line" [data]="chartData" [options]="chartOptions" height="280px" />
+        <p-chart type="line" [data]="chartData" [options]="chartOptions" height="260px" />
       }
     </div>
   </div>
 
   <!-- Tables Grid: Top Selling Products & Low Stock Inventory -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
     
     <!-- Top Selling Products -->
-    <div class="bg-white p-6 rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-4">
+    <div class="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-3">
       <div class="flex items-center justify-between">
-        <h3 class="font-bold text-sm text-surface-900 font-display">Top Selling Products</h3>
-        <span class="text-xs font-bold text-primary-600">Best Performers</span>
+        <h3 class="font-bold text-xs sm:text-sm text-surface-900 font-display">Top Selling Products</h3>
+        <span class="text-[11px] sm:text-xs font-bold text-primary-600">Best Performers</span>
       </div>
 
-      <p-table [value]="topProducts()" styleClass="p-datatable-sm">
-        <ng-template #header>
-          <tr class="text-[11px] text-surface-500 uppercase font-bold border-b border-surface-200">
-            <th class="py-2.5 px-3">Product</th>
-            <th class="py-2.5 px-3">Sold</th>
-            <th class="py-2.5 px-3 text-right">Revenue</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-prod>
-          <tr class="text-xs text-surface-800 border-b border-surface-100">
-            <td class="py-2.5 px-3">
-              <div class="font-bold text-surface-900">{{ prod.productName }}</div>
-              <div class="text-[10px] text-surface-400 font-mono">{{ prod.sku }}</div>
-            </td>
-            <td class="py-2.5 px-3 font-semibold">{{ prod.totalUnitsSold }} pcs</td>
-            <td class="py-2.5 px-3 text-right font-extrabold text-primary-700">
-              ৳{{ prod.totalRevenue | number }}
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+      <div class="overflow-x-auto">
+        <p-table [value]="topProducts()" styleClass="p-datatable-sm w-full">
+          <ng-template #header>
+            <tr class="text-[10px] sm:text-[11px] text-surface-500 uppercase font-bold border-b border-surface-200">
+              <th class="py-2 px-2.5">Product</th>
+              <th class="py-2 px-2.5">Sold</th>
+              <th class="py-2 px-2.5 text-right">Revenue</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-prod>
+            <tr class="text-xs text-surface-800 border-b border-surface-100">
+              <td class="py-2 px-2.5">
+                <div class="font-bold text-surface-900 truncate max-w-[140px] sm:max-w-none">{{ prod.productName }}</div>
+                <div class="text-[10px] text-surface-400 font-mono">{{ prod.sku }}</div>
+              </td>
+              <td class="py-2 px-2.5 font-semibold whitespace-nowrap">{{ prod.totalUnitsSold }} pcs</td>
+              <td class="py-2 px-2.5 text-right font-extrabold text-primary-700 whitespace-nowrap">
+                ৳{{ prod.totalRevenue | number }}
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
     </div>
 
     <!-- Low Stock Inventory Warnings -->
-    <div class="bg-white p-6 rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-4">
+    <div class="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-surface-200 shadow-xs flex flex-col gap-3">
       <div class="flex items-center justify-between">
-        <h3 class="font-bold text-sm text-surface-900 font-display">Low Stock Alerts</h3>
-        <span class="text-xs font-bold text-rose-600">Under 10 Units</span>
+        <h3 class="font-bold text-xs sm:text-sm text-surface-900 font-display">Low Stock Alerts</h3>
+        <span class="text-[11px] sm:text-xs font-bold text-rose-600">Under 10 Units</span>
       </div>
 
-      <p-table [value]="lowStockItems()" styleClass="p-datatable-sm">
-        <ng-template #header>
-          <tr class="text-[11px] text-surface-500 uppercase font-bold border-b border-surface-200">
-            <th class="py-2.5 px-3">Variant</th>
-            <th class="py-2.5 px-3">Stock Left</th>
-            <th class="py-2.5 px-3 text-right">Status</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-item>
-          <tr class="text-xs text-surface-800 border-b border-surface-100">
-            <td class="py-2.5 px-3">
-              <div class="font-bold text-surface-900">{{ item.productName }}</div>
-              <div class="text-[10px] text-surface-500">
-                Size: {{ item.sizeName }} &bull; Color: {{ item.colorName }}
-              </div>
-            </td>
-            <td class="py-2.5 px-3 font-mono font-bold text-rose-600">
-              {{ item.stockQuantity }} left
-            </td>
-            <td class="py-2.5 px-3 text-right">
-              <p-tag value="Low Stock" severity="danger" />
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+      <div class="overflow-x-auto">
+        <p-table [value]="lowStockItems()" styleClass="p-datatable-sm w-full">
+          <ng-template #header>
+            <tr class="text-[10px] sm:text-[11px] text-surface-500 uppercase font-bold border-b border-surface-200">
+              <th class="py-2 px-2.5">Variant</th>
+              <th class="py-2 px-2.5">Stock Left</th>
+              <th class="py-2 px-2.5 text-right">Status</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-item>
+            <tr class="text-xs text-surface-800 border-b border-surface-100">
+              <td class="py-2 px-2.5">
+                <div class="font-bold text-surface-900 truncate max-w-[140px] sm:max-w-none">{{ item.productName }}</div>
+                <div class="text-[10px] text-surface-500">
+                  {{ item.sizeName }} &bull; {{ item.colorName }}
+                </div>
+              </td>
+              <td class="py-2 px-2.5 font-mono font-bold text-rose-600 whitespace-nowrap">
+                {{ item.stockQuantity }} left
+              </td>
+              <td class="py-2 px-2.5 text-right whitespace-nowrap">
+                <p-tag value="Low Stock" severity="danger" />
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
     </div>
 
   </div>

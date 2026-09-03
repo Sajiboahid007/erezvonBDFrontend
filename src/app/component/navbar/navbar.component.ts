@@ -1,7 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { SharedModule } from '../../../shared.module';
-import { Category, Product } from '../../core/models';
+import { Category, Color, Product, Size, SubCategory } from '../../core/models';
+import { AttributeService } from '../../core/services/attribute.service';
 import { AuthService } from '../../core/services/auth.service';
 import { CartService } from '../../core/services/cart.service';
 import { CategoryService } from '../../core/services/category.service';
@@ -19,11 +20,17 @@ export class NavbarComponent implements OnInit {
   authService = inject(AuthService);
   cartService = inject(CartService);
   categoryService = inject(CategoryService);
+  attributeService = inject(AttributeService);
   productService = inject(ProductService);
   settingsService = inject(ShopSettingsService);
   private router = inject(Router);
 
   categories = signal<Category[]>([]);
+  subCategories = signal<SubCategory[]>([]);
+  sizes = signal<Size[]>([]);
+  colors = signal<Color[]>([]);
+  expandedCategories = signal<Set<number>>(new Set());
+
   searchQuery = signal<string>('');
   searchResults = signal<Product[]>([]);
   isSearching = signal<boolean>(false);
@@ -35,10 +42,52 @@ export class NavbarComponent implements OnInit {
       next: (cats) => this.categories.set(cats || []),
       error: () => {},
     });
+    this.categoryService.getSubCategories().subscribe({
+      next: (subs) => this.subCategories.set(subs || []),
+      error: () => {},
+    });
+    this.attributeService.getSizes().subscribe({
+      next: (s) => this.sizes.set(s || []),
+      error: () => {},
+    });
+    this.attributeService.getColors().subscribe({
+      next: (c) => this.colors.set(c || []),
+      error: () => {},
+    });
     this.settingsService.getSettings().subscribe({
       next: () => {},
       error: () => {},
     });
+  }
+
+  getSubCategoriesForCategory(catId: number): SubCategory[] {
+    return this.subCategories().filter((s) => s.CategoryId === catId);
+  }
+
+  toggleCategoryExpand(catId: number, event: Event): void {
+    event.stopPropagation();
+    event.preventDefault();
+    const set = new Set(this.expandedCategories());
+    if (set.has(catId)) {
+      set.delete(catId);
+    } else {
+      set.add(catId);
+    }
+    this.expandedCategories.set(set);
+  }
+
+  isCategoryExpanded(catId: number): boolean {
+    return this.expandedCategories().has(catId);
+  }
+
+  filterBySize(sizeId: number): void {
+    this.mobileMenuOpen.set(false);
+    this.router.navigate(['/shop'], { queryParams: { sizeId } });
+  }
+
+  filterByColor(colorId: number): void {
+    this.mobileMenuOpen.set(false);
+    this.router.navigate(['/shop'], { queryParams: { colorId } });
   }
 
   toggleUserMenu(): void {

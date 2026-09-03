@@ -1,42 +1,40 @@
-<div class="bg-surface-50 py-4 sm:py-8">
-  <div class="container flex flex-col gap-4 sm:gap-6">
+<div class="bg-surface-50 py-3 sm:py-8">
+  <div class="container flex flex-col gap-3 sm:gap-6">
     
     <!-- Page Header & Sorting Controls -->
-    <div class="flex flex-col gap-3 bg-white p-4 sm:p-6 rounded-2xl border border-surface-200 shadow-xs">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-xl sm:text-3xl font-extrabold text-surface-900 font-display">Product Catalog</h1>
-          <p class="text-xs text-surface-500 mt-0.5">
-            Showing <span class="font-bold text-surface-800">{{ totalRecords() }}</span> products
-          </p>
-        </div>
-
-        <!-- Desktop Sorting -->
-        <div class="hidden sm:flex items-center gap-3">
-          <button 
-            (click)="resetFilters()" 
-            class="text-xs font-bold text-surface-500 hover:text-rose-600 px-3 py-2 rounded-xl border border-surface-200 hover:border-rose-300 transition-colors flex items-center gap-1"
-          >
-            <i class="pi pi-refresh text-xs"></i> Reset
-          </button>
-
-          <p-select 
-            [options]="sortOptions" 
-            [ngModel]="selectedSort()" 
-            (ngModelChange)="selectedSort.set($event); loadProducts()"
-            optionLabel="label" 
-            optionValue="value" 
-            placeholder="Sort by"
-            styleClass="w-48 text-xs font-semibold"
-          />
-        </div>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-3.5 sm:p-6 rounded-2xl border border-surface-200 shadow-xs">
+      <div>
+        <h1 class="text-lg sm:text-3xl font-extrabold text-surface-900 font-display">Product Catalog</h1>
+        <p class="text-xs text-surface-500 mt-0.5">
+          Showing <span class="font-bold text-surface-800">{{ totalRecords() }}</span> products
+        </p>
       </div>
 
-      <!-- Mobile Controls Row (Filter Drawer Trigger + Sort + Reset) -->
-      <div class="flex sm:hidden items-center justify-between gap-2 pt-1 border-t border-surface-100">
+      <!-- Desktop Sorting & Reset Controls (Hidden on Mobile) -->
+      <div class="hidden sm:flex items-center gap-3">
+        <button 
+          (click)="resetFilters()" 
+          class="text-xs font-bold text-surface-500 hover:text-rose-600 px-3 py-2 rounded-xl border border-surface-200 hover:border-rose-300 transition-colors flex items-center gap-1"
+        >
+          <i class="pi pi-refresh text-xs"></i> Reset
+        </button>
+
+        <p-select 
+          [options]="sortOptions" 
+          [ngModel]="selectedSort()" 
+          (ngModelChange)="selectedSort.set($event); loadProducts()"
+          optionLabel="label" 
+          optionValue="value" 
+          placeholder="Sort by"
+          styleClass="w-48 text-xs font-semibold"
+        />
+      </div>
+
+      <!-- Mobile Single Clean Controls Row (Hidden on Desktop) -->
+      <div class="flex sm:hidden items-center justify-between gap-2 w-full pt-1 border-t border-surface-100">
         <button 
           (click)="filterDrawerOpen.set(true)"
-          class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-surface-100 text-surface-800 font-bold text-xs border border-surface-200 active:bg-surface-200"
+          class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-surface-100 text-surface-800 font-bold text-xs border border-surface-200 active:bg-surface-200 transition-colors"
         >
           <i class="pi pi-sliders-h text-primary-600"></i>
           <span>Filters</span>
@@ -57,42 +55,19 @@
 
         <button 
           (click)="resetFilters()" 
-          class="p-2 rounded-xl border border-surface-200 text-surface-500 hover:text-rose-600 hover:border-rose-300 transition-colors flex items-center justify-center"
+          class="p-2 rounded-xl border border-surface-200 text-surface-500 hover:text-rose-600 hover:border-rose-300 transition-colors flex items-center justify-center shrink-0"
           title="Reset Filters"
+          aria-label="Reset Filters"
         >
           <i class="pi pi-refresh text-xs"></i>
         </button>
       </div>
-
-      <!-- Mobile Category Swipeable Quick-Filter Pills -->
-      <div class="flex sm:hidden items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 -mx-1 px-1">
-        <button 
-          (click)="selectCategory(undefined)"
-          [class.bg-primary-600]="selectedCategory() === undefined"
-          [class.text-white]="selectedCategory() === undefined"
-          [class.border-primary-600]="selectedCategory() === undefined"
-          class="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap border border-surface-200 bg-surface-100 text-surface-700 transition-colors"
-        >
-          All ({{ totalRecords() }})
-        </button>
-        @for (cat of categories(); track cat.Id) {
-          <button 
-            (click)="selectCategory(cat.Id)"
-            [class.bg-primary-600]="selectedCategory() === cat.Id"
-            [class.text-white]="selectedCategory() === cat.Id"
-            [class.border-primary-600]="selectedCategory() === cat.Id"
-            class="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap border border-surface-200 bg-surface-100 text-surface-700 transition-colors"
-          >
-            {{ cat.Name }}
-          </button>
-        }
-      </div>
     </div>
 
     <!-- Main Layout: Desktop Sidebar Filters + Products Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
       
-      <!-- Desktop Sidebar Filters (3 Cols - Hidden on Mobile) -->
+      <!-- Desktop Sidebar Filters (3 Cols - 100% HIDDEN on Smartphone / Tablet) -->
       <div class="hidden lg:flex lg:col-span-3 flex-col gap-5">
         
         <!-- Category Filter Card -->
@@ -214,7 +189,7 @@
 
       </div>
 
-      <!-- Products Grid (9 Cols on Desktop, Full Width on Mobile) -->
+      <!-- Products Grid (9 Cols on Desktop, Full Width on Smartphone) -->
       <div class="lg:col-span-9 flex flex-col gap-6">
         
         @if (loading()) {
@@ -380,7 +355,7 @@
         </button>
         @for (cat of categories(); track cat.Id) {
           <button 
-            (click)="selectCategory(cat.Id)"
+            (click)="selectCategory(cat.Id)" 
             [class.bg-primary-600]="selectedCategory() === cat.Id"
             [class.text-white]="selectedCategory() === cat.Id"
             class="px-3 py-1.5 rounded-xl text-xs font-bold border border-surface-200 bg-surface-100 text-surface-700"

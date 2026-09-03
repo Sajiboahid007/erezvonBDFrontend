@@ -13,6 +13,7 @@ export class AdminLayoutComponent {
   authService = inject(AuthService);
 
   sidebarOpen = signal<boolean>(true);
+  mobileSidebarOpen = signal<boolean>(false);
 
   toggleSidebar(): void {
     this.sidebarOpen.update((v) => !v);

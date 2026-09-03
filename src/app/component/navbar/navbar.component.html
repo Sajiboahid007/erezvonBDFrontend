@@ -1,9 +1,9 @@
 <!-- Top Notification Bar -->
 <div class="bg-surface-900 text-surface-200 text-xs py-1.5 px-3 sm:px-4 border-b border-surface-800">
   <div class="container flex justify-between items-center">
-    <!-- Mobile: Centered Clean Announcement -->
+    <!-- Mobile & Desktop Clean Announcement -->
     <div class="flex items-center justify-center w-full md:w-auto">
-      <span class="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px] sm:text-xs">
+      <span class="flex items-center gap-1.5 text-emerald-400 font-semibold text-[10.5px] sm:text-xs tracking-tight">
         <i class="pi pi-bolt text-xs text-amber-400"></i> Free Express Delivery on orders over {{ settingsService.settingsSignal().CurrencySymbol }}{{ settingsService.settingsSignal().FreeDeliveryThreshold || 2000 }}
       </span>
     </div>
@@ -22,10 +22,10 @@
 
 <!-- Main Header -->
 <header class="sticky top-0 z-40 bg-white border-b border-surface-200 shadow-xs transition-all">
-  <div class="container flex items-center justify-between py-2 sm:py-3.5 gap-2 sm:gap-4">
+  <div class="container flex items-center justify-between py-2 sm:py-3.5 gap-2">
     
-    <!-- Mobile Hamburger & Logo -->
-    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+    <!-- Mobile Hamburger & Brand Logo -->
+    <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
       <button 
         class="md:hidden p-1.5 -ml-1 text-surface-700 hover:text-primary-600 focus:outline-none" 
         (click)="mobileMenuOpen.set(true)"
@@ -34,12 +34,12 @@
         <i class="pi pi-bars text-xl"></i>
       </button>
 
-      <a routerLink="/" class="flex items-center gap-2 sm:gap-2.5">
+      <a routerLink="/" class="flex items-center gap-2">
         <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center shadow-xs text-white shrink-0">
           <i class="pi pi-shopping-bag text-base sm:text-xl"></i>
         </div>
-        <div>
-          <span class="text-lg sm:text-xl font-extrabold tracking-tight font-display text-surface-900 leading-none">
+        <div class="flex flex-col">
+          <span class="text-base sm:text-xl font-extrabold tracking-tight font-display text-surface-900 leading-tight">
             REZVON<span class="text-primary-600">.</span>
           </span>
           <p class="hidden sm:block text-[10px] uppercase font-bold text-surface-400 tracking-wider -mt-0.5">
@@ -103,7 +103,7 @@
       }
     </div>
 
-    <!-- Actions & Profile (Right side) -->
+    <!-- Actions & Profile (Right side - perfectly compact) -->
     <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
       
       <!-- Admin Link if authorized -->
@@ -119,13 +119,13 @@
       <!-- Cart Button with Counter -->
       <button 
         (click)="toggleCart()" 
-        class="relative p-2 sm:p-2.5 rounded-xl text-surface-700 hover:bg-surface-100 hover:text-primary-600 transition-colors flex items-center gap-1.5"
+        class="relative p-2 sm:p-2.5 rounded-xl text-surface-700 hover:bg-surface-100 hover:text-primary-600 transition-colors flex items-center gap-1"
         title="Shopping Cart"
         aria-label="View Shopping Cart"
       >
         <i class="pi pi-shopping-cart text-lg sm:text-xl"></i>
         @if (cartService.itemCount() > 0) {
-          <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] sm:text-[11px] font-bold h-4.5 min-w-[18px] sm:h-5 sm:min-w-[20px] px-1 rounded-full flex items-center justify-center shadow-md animate-pulse">
+          <span class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] sm:text-[11px] font-bold h-4 min-w-[16px] sm:h-5 sm:min-w-[20px] px-1 rounded-full flex items-center justify-center shadow-md">
             {{ cartService.itemCount() }}
           </span>
         }
@@ -188,9 +188,9 @@
       } @else {
         <a 
           routerLink="/auth/login" 
-          class="flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs transition-all shadow-xs shadow-primary-500/20 whitespace-nowrap shrink-0"
+          class="flex items-center gap-1 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs transition-all shadow-xs shadow-primary-500/20 whitespace-nowrap shrink-0"
         >
-          <i class="pi pi-user text-xs sm:text-sm"></i> <span>Login</span>
+          <i class="pi pi-user text-xs"></i> <span>Login</span>
         </a>
       }
 
@@ -198,13 +198,13 @@
   </div>
 
   <!-- Mobile Full-Width Dedicated Search Bar Row -->
-  <div class="px-3 pb-2.5 md:hidden w-full relative">
-    <div class="relative w-full">
-      <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 text-xs"></i>
+  <div class="px-3.5 pt-1 pb-3 md:hidden w-full relative">
+    <div class="mobile-search-wrapper">
+      <i class="pi pi-search mobile-search-icon"></i>
       <input 
         type="text" 
         placeholder="Search shirts, panjabis, polo..." 
-        class="w-full rounded-full bg-surface-100 border border-surface-200 focus:border-primary-500 focus:bg-white text-xs py-2 pl-8 pr-7 transition-all outline-none"
+        class="mobile-search-input"
         [ngModel]="searchQuery()" 
         (ngModelChange)="searchQuery.set($event)"
         (input)="onSearchInput()"
@@ -214,43 +214,44 @@
         <button 
           type="button" 
           (click)="searchQuery.set(''); searchResults.set([])"
-          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-600 p-0.5"
+          class="mobile-search-clear"
+          aria-label="Clear Search"
         >
-          <i class="pi pi-times-circle text-xs"></i>
+          <i class="pi pi-times-circle text-sm"></i>
         </button>
       }
     </div>
 
     <!-- Mobile Autocomplete Dropdown -->
     @if (searchResults().length > 0) {
-      <div class="absolute left-3 right-3 top-10 bg-white rounded-2xl shadow-2xl border border-surface-200 p-2 z-50 max-h-80 overflow-y-auto">
-        <div class="text-[10px] font-bold text-surface-400 px-3 py-1 uppercase">Search Results ({{ searchResults().length }})</div>
+      <div class="mobile-search-dropdown">
+        <div class="dropdown-header">Search Results ({{ searchResults().length }})</div>
         @for (prod of searchResults(); track prod.Id) {
           <div 
             (click)="selectProduct(prod)" 
-            class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-surface-50 active:bg-surface-100 cursor-pointer transition-colors border-b border-surface-50 last:border-0"
+            class="dropdown-item"
           >
             @if (prod.Images?.[0]?.ImageUrl) {
               <img 
                 [src]="prod.Images?.[0]?.ImageUrl" 
-                class="w-10 h-10 object-cover rounded-lg border border-surface-200 shrink-0" 
+                class="dropdown-img" 
                 alt="Product" 
               />
             } @else {
-              <div class="w-10 h-10 rounded-lg bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-400 shrink-0">
+              <div class="dropdown-placeholder">
                 <i class="pi pi-image text-xs"></i>
               </div>
             }
-            <div class="flex-1 min-w-0">
-              <div class="font-semibold text-xs text-surface-900 truncate">{{ prod.Name }}</div>
-              <div class="text-[10px] text-surface-400">{{ prod.Category?.Name || 'General' }} &bull; SKU: {{ prod.SKU }}</div>
+            <div class="dropdown-info">
+              <div class="dropdown-title">{{ prod.Name }}</div>
+              <div class="dropdown-sub">{{ prod.Category?.Name || 'General' }} &bull; SKU: {{ prod.SKU }}</div>
             </div>
-            <div class="text-right shrink-0">
-              <div class="font-bold text-primary-600 text-xs">
+            <div class="dropdown-price">
+              <div class="current-price">
                 ৳{{ prod.DiscountPrice || prod.RegularPrice }}
               </div>
               @if (prod.DiscountPrice) {
-                <div class="text-[10px] text-surface-400 line-through">৳{{ prod.RegularPrice }}</div>
+                <div class="old-price">৳{{ prod.RegularPrice }}</div>
               }
             </div>
           </div>
@@ -259,8 +260,7 @@
     }
   </div>
 
-  <!-- Navigation Bar (Categories Links) -->
-  <!-- Desktop view: standard bar -->
+  <!-- Desktop Navigation Bar (Categories Links) -->
   <nav class="bg-surface-50/80 border-t border-surface-200 hidden md:block">
     <div class="container flex items-center gap-8 py-2.5 text-xs font-bold uppercase tracking-wider text-surface-700">
       <a routerLink="/" routerLinkActive="text-primary-600" [routerLinkActiveOptions]="{ exact: true }" class="hover:text-primary-600 transition-colors flex items-center gap-1">
@@ -277,42 +277,10 @@
       }
     </div>
   </nav>
-
-  <!-- Mobile view: horizontal scrollable pills -->
-  <nav class="bg-surface-50 border-t border-surface-200 md:hidden overflow-x-auto no-scrollbar py-1.5 px-3">
-    <div class="flex items-center gap-1.5 whitespace-nowrap">
-      <a 
-        routerLink="/" 
-        routerLinkActive="active-pill" 
-        [routerLinkActiveOptions]="{ exact: true }" 
-        class="category-nav-pill"
-      >
-        <i class="pi pi-home text-[10px]"></i> Home
-      </a>
-      <a 
-        routerLink="/shop" 
-        routerLinkActive="active-pill" 
-        [routerLinkActiveOptions]="{ exact: true }" 
-        class="category-nav-pill"
-      >
-        All Products
-      </a>
-      @for (cat of categories(); track cat.Id) {
-        <a 
-          [routerLink]="['/shop']" 
-          [queryParams]="{ categoryId: cat.Id }" 
-          routerLinkActive="active-pill"
-          class="category-nav-pill"
-        >
-          {{ cat.Name }}
-        </a>
-      }
-    </div>
-  </nav>
 </header>
 
 <!-- Mobile Navigation Drawer -->
-<p-drawer [visible]="mobileMenuOpen()" (visibleChange)="mobileMenuOpen.set($event)" position="left" styleClass="w-80">
+<p-drawer [visible]="mobileMenuOpen()" (visibleChange)="mobileMenuOpen.set($event)" position="left" styleClass="w-80 sm:w-96">
   <ng-template #header>
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-white">
@@ -322,39 +290,124 @@
     </div>
   </ng-template>
   
-  <div class="flex flex-col gap-4 py-2">
-    <!-- Navigation links -->
+  <div class="flex flex-col gap-4 py-2 overflow-y-auto">
+    <!-- Primary Navigation links -->
     <div class="flex flex-col gap-1 text-sm font-semibold text-surface-800">
-      <a routerLink="/" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-lg hover:bg-surface-100 flex items-center gap-2">
+      <a routerLink="/" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-xl hover:bg-surface-100 flex items-center gap-2.5 transition-colors">
         <i class="pi pi-home text-primary-600"></i> Home
       </a>
-      <a routerLink="/shop" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-lg hover:bg-surface-100 flex items-center gap-2">
+      <a routerLink="/shop" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-xl hover:bg-surface-100 flex items-center gap-2.5 transition-colors">
         <i class="pi pi-th-large text-primary-600"></i> All Products
       </a>
-      <a routerLink="/my-orders" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-lg hover:bg-surface-100 flex items-center gap-2">
+      <a routerLink="/my-orders" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-xl hover:bg-surface-100 flex items-center gap-2.5 transition-colors">
         <i class="pi pi-receipt text-primary-600"></i> My Orders
       </a>
       @if (authService.isAdmin()) {
-        <a routerLink="/admin/dashboard" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-lg bg-amber-50 text-amber-900 flex items-center gap-2">
+        <a routerLink="/admin/dashboard" (click)="mobileMenuOpen.set(false)" class="p-2.5 rounded-xl bg-amber-50 text-amber-900 hover:bg-amber-100 flex items-center gap-2.5 transition-colors">
           <i class="pi pi-shield text-amber-600"></i> Admin Panel
         </a>
       }
     </div>
 
-    <div class="border-t border-surface-200 my-2"></div>
-    <div class="text-xs font-bold uppercase text-surface-400 px-2">Categories</div>
-    <div class="flex flex-col gap-1 text-sm">
-      @for (cat of categories(); track cat.Id) {
-        <a 
-          [routerLink]="['/shop']" 
-          [queryParams]="{ categoryId: cat.Id }" 
-          (click)="mobileMenuOpen.set(false)" 
-          class="p-2 rounded-lg hover:bg-surface-100 text-surface-700 flex justify-between items-center"
-        >
-          <span>{{ cat.Name }}</span>
-          <i class="pi pi-angle-right text-xs text-surface-400"></i>
-        </a>
-      }
+    <!-- Categories & Subcategories Section -->
+    <div class="border-t border-surface-200 pt-3">
+      <div class="text-[11px] font-extrabold uppercase tracking-wider text-surface-400 px-2 mb-2 flex items-center justify-between">
+        <span>Categories</span>
+        <i class="pi pi-list text-primary-600 text-xs"></i>
+      </div>
+      <div class="flex flex-col gap-1 text-sm">
+        @for (cat of categories(); track cat.Id) {
+          <div>
+            <div class="flex items-center justify-between p-2 rounded-xl hover:bg-surface-100 text-surface-800 transition-colors">
+              <a 
+                [routerLink]="['/shop']" 
+                [queryParams]="{ categoryId: cat.Id }" 
+                (click)="mobileMenuOpen.set(false)" 
+                class="flex-1 font-semibold text-xs"
+              >
+                {{ cat.Name }}
+              </a>
+
+              @if (getSubCategoriesForCategory(cat.Id).length > 0) {
+                <button 
+                  type="button" 
+                  (click)="toggleCategoryExpand(cat.Id, $event)" 
+                  class="p-1 text-surface-400 hover:text-primary-600 rounded-md transition-colors"
+                  aria-label="Toggle subcategories"
+                >
+                  <i [class]="isCategoryExpanded(cat.Id) ? 'pi pi-chevron-up text-xs text-primary-600' : 'pi pi-chevron-down text-xs'"></i>
+                </button>
+              }
+            </div>
+
+            <!-- Subcategories List (Expanded) -->
+            @if (isCategoryExpanded(cat.Id) && getSubCategoriesForCategory(cat.Id).length > 0) {
+              <div class="pl-4 pr-1 py-1 flex flex-col gap-1 border-l-2 border-primary-100 ml-3 mt-0.5">
+                <a 
+                  [routerLink]="['/shop']" 
+                  [queryParams]="{ categoryId: cat.Id }"
+                  (click)="mobileMenuOpen.set(false)" 
+                  class="text-[11px] font-medium text-surface-500 hover:text-primary-600 py-1 px-2 rounded-lg hover:bg-surface-50"
+                >
+                  All in {{ cat.Name }}
+                </a>
+                @for (sub of getSubCategoriesForCategory(cat.Id); track sub.Id) {
+                  <a 
+                    [routerLink]="['/shop']" 
+                    [queryParams]="{ categoryId: cat.Id, subCategoryId: sub.Id }" 
+                    (click)="mobileMenuOpen.set(false)" 
+                    class="text-[11px] font-medium text-surface-600 hover:text-primary-600 py-1 px-2 rounded-lg hover:bg-surface-50 flex items-center justify-between"
+                  >
+                    <span>{{ sub.Name }}</span>
+                    <i class="pi pi-angle-right text-[10px] text-surface-400"></i>
+                  </a>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
     </div>
+
+    <!-- Filter by Sizes Section -->
+    @if (sizes().length > 0) {
+      <div class="border-t border-surface-200 pt-3">
+        <div class="text-[11px] font-extrabold uppercase tracking-wider text-surface-400 px-2 mb-2">
+          Filter by Size
+        </div>
+        <div class="flex flex-wrap gap-1.5 px-2">
+          @for (size of sizes(); track size.Id) {
+            <button 
+              type="button"
+              (click)="filterBySize(size.Id)"
+              class="px-2.5 py-1 text-xs font-bold rounded-lg border border-surface-200 bg-surface-50 hover:bg-primary-50 hover:border-primary-400 hover:text-primary-700 text-surface-700 transition-colors"
+            >
+              {{ size.Name }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Filter by Colors Section -->
+    @if (colors().length > 0) {
+      <div class="border-t border-surface-200 pt-3 pb-6">
+        <div class="text-[11px] font-extrabold uppercase tracking-wider text-surface-400 px-2 mb-2">
+          Filter by Color
+        </div>
+        <div class="flex flex-wrap gap-2 px-2">
+          @for (col of colors(); track col.Id) {
+            <button 
+              type="button"
+              (click)="filterByColor(col.Id)" 
+              [title]="col.Name"
+              class="w-7 h-7 rounded-full border border-surface-300 shadow-2xs hover:scale-110 transition-transform active:scale-95"
+              [style.background-color]="col.HexCode || '#ccc'"
+            ></button>
+          }
+        </div>
+      </div>
+    }
+
   </div>
 </p-drawer>
